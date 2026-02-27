@@ -16,14 +16,12 @@ const ctx = canvas.getContext('2d');
 //canvas utilities
 const canvasUtils = {
     /**
-     * Shrinks font size until the text fits within maxWidth.
-     * Returns the final font size used.
+     * Shrinks font size until a single line of text fits within maxWidth.
      */
     fitTextSingleLine: (ctx, text, x, y, maxWidth, maxFontSize, weight = 'normal', font = 'Arial') => {
         let size = maxFontSize;
         ctx.font = `${weight} ${size}px ${font}`;
         
-        // Shrink font size until it fits or hits a minimum readable size (10px)
         while (ctx.measureText(text).width > maxWidth && size > 10) {
             size--;
             ctx.font = `${weight} ${size}px ${font}`;
@@ -34,8 +32,7 @@ const canvasUtils = {
     },
 
     /**
-     * Wraps text into multiple lines. Useful for quotes or descriptions.
-     * Returns the final Y position after drawing all lines.
+     * Standard text wrap. Useful when you know the text is short enough to not overflow Y.
      */
     wrapText: (ctx, text, x, y, maxWidth, lineHeight) => {
         const words = text.split(' ');
@@ -57,6 +54,62 @@ const canvasUtils = {
         }
         ctx.fillText(line, x, currentY);
         return currentY;
+    },
+
+    /**
+     * The heavy lifter: Shrinks font size until a multi-line paragraph fits 
+     * inside both maxWidth AND maxHeight.
+     */
+    fitTextMultiLine: (ctx, text, x, y, maxWidth, maxHeight, maxFontSize, weight = 'normal', font = 'Arial', lineSpacing = 1.2) => {
+        let size = maxFontSize;
+        let lines = [];
+        let lineHeight = size * lineSpacing;
+
+        // Helper function to calculate wrapping at a specific font size
+        const calculateLines = (testSize) => {
+            ctx.font = `${weight} ${testSize}px ${font}`;
+            const words = text.split(' ');
+            let currentLines = [];
+            let currentLine = '';
+
+            for (let n = 0; n < words.length; n++) {
+                const testLine = currentLine + words[n] + ' ';
+                const metrics = ctx.measureText(testLine);
+                
+                if (metrics.width > maxWidth && n > 0) {
+                    currentLines.push(currentLine.trim());
+                    currentLine = words[n] + ' ';
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            currentLines.push(currentLine.trim());
+            return currentLines;
+        };
+
+        // Shrink loop: Check total height against maxHeight
+        while (size > 10) {
+            lineHeight = size * lineSpacing;
+            lines = calculateLines(size);
+            const totalHeight = lines.length * lineHeight;
+
+            if (totalHeight <= maxHeight) {
+                break; // It fits perfectly!
+            }
+            size--; // Shrink font and try again
+        }
+
+        // Draw the final calculated lines
+        ctx.font = `${weight} ${size}px ${font}`;
+        ctx.textBaseline = 'top'; // Makes Y coordinate the top of the bounding box
+        
+        for (let i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], x, y + (i * lineHeight));
+        }
+        
+        ctx.textBaseline = 'alphabetic'; // Reset to canvas default safely
+        
+        return { sizeUsed: size, totalHeight: lines.length * lineHeight };
     }
 };
 
@@ -298,6 +351,135 @@ const Plugins = [
             ctx.fillText(`- ${q.author}`, width - 100, finalY + 80);
             
             ctx.textAlign = 'left'; // Always reset
+        }
+    },
+    {
+        id: 'conway_life',
+        theme: 'Fun & Aesthetic',
+        name: 'Conway\'s Game of Life',
+        description: 'Zero-player cellular automaton. Evolves every update.',
+        minInterval: 5, // Faster updates look cool for automata
+        requiredKeys: [], 
+        grid: null, // We store the state right here in the plugin object
+        cols: 50, // 800px / 16px
+        rows: 30, // 480px / 16px
+        cellSize: 16,
+        render: async function(ctx, width, height, apiKeys) { 
+            // Note: using 'function' instead of '() =>' so 'this' refers to the plugin object
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'black';
+
+            // 1. Initialize random grid on first run or if it died out
+            if (!this.grid) {
+                this.grid = Array(this.cols).fill().map(() => 
+                    Array(this.rows).fill(0).map(() => Math.random() > 0.85 ? 1 : 0)
+                );
+            }
+
+            let activeCells = 0;
+
+            // 2. Draw current grid
+            for(let i = 0; i < this.cols; i++) {
+                for(let j = 0; j < this.rows; j++) {
+                    if(this.grid[i][j]) {
+                        // Drawing rectangles with a 1px gap for a cool grid effect
+                        ctx.fillRect((i * this.cellSize) + 1, (j * this.cellSize) + 1, this.cellSize - 2, this.cellSize - 2);
+                        activeCells++;
+                    }
+                }
+            }
+
+            // 3. Calculate next generation
+            let nextGen = Array(this.cols).fill().map(() => Array(this.rows).fill(0));
+            for(let i = 0; i < this.cols; i++) {
+                for(let j = 0; j < this.rows; j++) {
+                    let state = this.grid[i][j];
+                    let neighbors = 0;
+                    
+                    // Count 8 neighbors with wrapping edges (toroidal array)
+                    for(let x = -1; x <= 1; x++) {
+                        for(let y = -1; y <= 1; y++) {
+                            if(x === 0 && y === 0) continue;
+                            let col = (i + x + this.cols) % this.cols;
+                            let row = (j + y + this.rows) % this.rows;
+                            neighbors += this.grid[col][row];
+                        }
+                    }
+                    
+                    // Conway's Rules
+                    if (state === 0 && neighbors === 3) nextGen[i][j] = 1;
+                    else if (state === 1 && (neighbors < 2 || neighbors > 3)) nextGen[i][j] = 0;
+                    else nextGen[i][j] = state;
+                }
+            }
+            
+            this.grid = nextGen;
+
+            // Reset the grid if it completely dies so the screen isn't just blank forever
+            if (activeCells === 0) this.grid = null; 
+        }
+    },
+    {
+        id: 'cricket_live',
+        theme: 'Sports & Live Events',
+        name: 'Live Cricket Scores',
+        description: 'Displays current match. Needs free key from cricketdata.org.',
+        minInterval: 60,
+        requiredKeys: [
+            { id: 'cricketdata_key', type: 'password', label: 'CricketData.org API Key' }
+        ],
+        render: async (ctx, width, height, apiKeys) => {
+            const key = apiKeys['cricketdata_key'];
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'black';
+            
+            canvasUtils.fitTextSingleLine(ctx, 'Live Cricket', 30, 60, width - 60, 40, 'bold');
+            ctx.fillRect(30, 80, width - 60, 4);
+
+            try {
+                // Fetch current matches
+                const url = `https://api.cricapi.com/v1/currentMatches?apikey=${key}&offset=0`;
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const data = await res.json();
+
+                if (!data.data || data.data.length === 0) {
+                    canvasUtils.fitTextSingleLine(ctx, 'No live matches right now.', 30, 150, width - 60, 35);
+                    return;
+                }
+
+                // Grab the first most relevant match
+                const match = data.data[0];
+                let yPos = 140;
+
+                // Match Title (e.g., India vs Australia)
+                canvasUtils.fitTextSingleLine(ctx, match.name, 30, yPos, width - 60, 35, 'bold');
+                yPos += 60;
+
+                // Loop through innings if scores exist
+                if (match.score && match.score.length > 0) {
+                    match.score.forEach(inning => {
+                        const scoreText = `${inning.inning}: ${inning.r}/${inning.w} (${inning.o} ov)`;
+                        canvasUtils.fitTextSingleLine(ctx, scoreText, 30, yPos, width - 60, 45, 'bold');
+                        yPos += 60;
+                    });
+                } else {
+                    canvasUtils.fitTextSingleLine(ctx, 'Match starting soon...', 30, yPos, width - 60, 30, 'italic');
+                    yPos += 60;
+                }
+
+                // Match Status (e.g., "India require 34 runs to win from 12 balls")
+                // Using the multi-line utility because these statuses can be extremely long
+                ctx.fillStyle = '#333';
+                canvasUtils.fitTextMultiLine(ctx, match.status, 30, yPos + 20, width - 60, height - yPos - 40, 30, 'italic');
+
+            } catch (err) {
+                canvasUtils.fitTextMultiLine(ctx, 'Error fetching Cricket Data. Check your API key limits or proxy status.', 30, 150, width - 60, height - 200, 30);
+                console.error(err);
+            }
         }
     }
 ];
