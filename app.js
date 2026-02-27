@@ -10,6 +10,7 @@ let config = {
 
 let renderTimer = null;
 let lastFrameData = null;
+let searchQuery = '';
 const canvas = document.getElementById('inkyCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -599,6 +600,25 @@ const Plugins = [
 // --- Core Functions ---
 
 function init() {
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    
+    // Check local storage or system preference on load
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    });
+
+    // Search Filtering Logic
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        renderPluginList();
+    });
     renderPluginList();
     buildApiKeyInputs();
     runLoop();
@@ -628,50 +648,68 @@ function init() {
 function renderPluginList() {
     const list = document.getElementById('pluginList');
     list.innerHTML = '';
-    // Group plugins by their theme
-    const groupedPlugins = Plugins.reduce((acc, plugin) => {
+    
+    // 1. FILTER the plugins based on the search query
+    const filteredPlugins = Plugins.filter(p => 
+        p.name.toLowerCase().includes(searchQuery) || 
+        p.description.toLowerCase().includes(searchQuery) ||
+        (p.theme && p.theme.toLowerCase().includes(searchQuery))
+    );
+
+    if (filteredPlugins.length === 0) {
+        list.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">No plugins found matching "${searchQuery}"</div>`;
+        return;
+    }
+
+    // 2. GROUP the filtered plugins by their theme
+    const groupedPlugins = filteredPlugins.reduce((acc, plugin) => {
         const theme = plugin.theme || 'Uncategorized';
         if (!acc[theme]) acc[theme] = [];
         acc[theme].push(plugin);
         return acc;
     }, {});
-    // Iterate through the grouped categories
+
+    // 3. RENDER the grouped plugins
     for (const [theme, pluginsInTheme] of Object.entries(groupedPlugins)) {
-        // 1. Create the Category Header
+        
         const header = document.createElement('div');
-        header.className = 'text-xs font-bold text-gray-500 uppercase tracking-widest mt-5 mb-2 first:mt-0 px-1 border-b border-gray-200 pb-1';
+        header.className = 'text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-5 mb-2 first:mt-0 px-1 border-b border-gray-200 dark:border-gray-700 pb-1';
         header.innerText = theme;
         list.appendChild(header);
-        // 2. Render the Plugins under this category
+
         pluginsInTheme.forEach(plugin => {
             const div = document.createElement('div');
             const isActive = plugin.id === config.activePluginId;
-            // Apply distinct styling if active
+            
+            // Added Dark Mode specific styles
             div.className = `p-3 mb-2 border rounded cursor-pointer transition duration-150 ${
                 isActive 
-                ? 'bg-black text-white border-black shadow-md' 
-                : 'hover:bg-gray-50 bg-white border-gray-200'
+                ? 'bg-black text-white dark:bg-gray-100 dark:text-black border-black dark:border-gray-100 shadow-md' 
+                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'
             }`;
+            
             div.innerHTML = `
                 <div class="font-bold flex justify-between items-center">
                     <span>${plugin.name}</span>
-                    ${isActive ? '<span class="h-2 w-2 bg-green-400 rounded-full animate-pulse"></span>' : ''}
+                    ${isActive ? '<span class="h-2 w-2 bg-green-400 dark:bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]"></span>' : ''}
                 </div>
-                <div class="text-xs mt-1 leading-relaxed ${isActive ? 'text-gray-300' : 'text-gray-500'}">
+                <div class="text-xs mt-1 leading-relaxed ${isActive ? 'text-gray-300 dark:text-gray-700' : 'text-gray-500 dark:text-gray-400'}">
                     ${plugin.description}
                 </div>
                 <div class="mt-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono ${
-                    isActive ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
+                    isActive ? 'bg-gray-800 dark:bg-gray-300 text-gray-300 dark:text-gray-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
                 }">
                     Min: ${plugin.minInterval || 60}s
                 </div>
             `;
+            
             div.onclick = () => {
                 config.activePluginId = plugin.id;
                 localStorage.setItem('inkyActivePlugin', plugin.id);
                 renderPluginList(); 
-                runLoop(); // Immediately trigger the new plugin and reset its specific timer
+                runLoop(); 
             };
+            
             list.appendChild(div);
         });
     }
@@ -687,7 +725,7 @@ function buildApiKeyInputs() {
     // If no keys are required, show a friendly message
     if (!activePlugin || !activePlugin.requiredKeys || activePlugin.requiredKeys.length === 0) {
         container.innerHTML = `
-            <div class="text-sm text-gray-500 italic p-3 bg-gray-50 border rounded text-center">
+            <div class="text-sm text-gray-500 dark:text-gray-50 italic p-3 bg-gray-50 dark:bg-gray-500 border rounded text-center">
                 No API keys or extra settings required for <b>${activePlugin ? activePlugin.name : 'this plugin'}</b>.
             </div>
         `;
@@ -703,17 +741,17 @@ function buildApiKeyInputs() {
         
         if (keyDef.type === 'password') {
             const placeholder = savedValue ? '(unchanged)' : 'Enter API Key';
-            inputHtml = `<input type="password" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${placeholder}">`;
+            inputHtml = `<input type="password" data-key="${keyDef.id}" class="apikey-input dark:text-gray-50 dark:bg-gray-800 w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${placeholder}">`;
             
         } else if (keyDef.type === 'number') {
-            inputHtml = `<input type="number" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
+            inputHtml = `<input type="number" data-key="${keyDef.id}" class="apikey-input dark:text-gray-50 dark:bg-gray-800 w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
             
         } else { 
-            inputHtml = `<input type="text" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
+            inputHtml = `<input type="text" data-key="${keyDef.id}" class="apikey-input dark:text-gray-50 dark:bg-gray-800 w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
         }
         
         wrapper.innerHTML = `
-            <label class="block text-sm font-medium mb-1 mt-3 text-gray-700">${keyDef.label || keyDef.id}</label>
+            <label class="block text-sm font-medium mb-1 mt-3 dark:text-gray-50 text-gray-700">${keyDef.label || keyDef.id}</label>
             ${inputHtml}
         `;
         container.appendChild(wrapper);
