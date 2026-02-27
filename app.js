@@ -268,13 +268,13 @@ const Plugins = [
     },
     {
         id: 'github_activity',
-        theme: 'Tech & Dev', // <-- New Theme Property
+        theme: 'Tech & Dev', 
         name: 'GitHub Recent Commits',
         description: 'Shows latest commits for a specific repo.',
         minInterval: 300,
         requiredKeys: [
-            { id: 'github_repo', type: 'text', label: 'Target Repo (user/repo)' },
-            { id: 'commit_count', type: 'number', label: 'Number of Commits' }
+            { id: 'github_repo', type: 'text', label: 'Target Repo (user/repo)', placeholder: 'e.g., Sarin-jacob/Inky' },
+            { id: 'commit_count', type: 'number', label: 'Number of Commits', placeholder: 'e.g., 4' }
         ],
         render: async (ctx, width, height, apiKeys) => {
             ctx.fillStyle = 'white'; 
@@ -283,17 +283,26 @@ const Plugins = [
             
             // Default to your Inky repo if blank
             const repo = apiKeys['github_repo'] || 'Sarin-jacob/Inky'; 
-            const commit_count = apiKeys['commit_count'] || 4;
+            // Parse as integer to ensure .slice() and our math works correctly
+            const commit_count = parseInt(apiKeys['commit_count']) || 4;
             
             canvasUtils.fitTextSingleLine(ctx, `Recent Commits: ${repo}`, 30, 60, width - 60, 40, 'bold');
             ctx.fillRect(30, 80, width - 60, 4);
 
             try {
                 const res = await fetch(`https://api.github.com/repos/${repo}/commits`);
-                const commits = (await res.json()).slice(0, commit_count);
-                console.log(repo);
+                const data = await res.json();
                 
-                let yPos = 140;
+                // Prevent crash if GitHub returns an error object (like rate limit hit or 404)
+                if (!Array.isArray(data)) throw new Error('Invalid repo or rate limit reached.');
+
+                const commits = data.slice(0, commit_count);
+                
+                // Dynamically calculate vertical spacing so it never overflows the 480px canvas height
+                const availableHeight = height - 120; // Leave room for the header
+                const ySpacing = Math.min(85, availableHeight / commit_count);
+                
+                let yPos = 120; 
                 commits.forEach((c, index) => {
                     // Grab just the first line of the commit message
                     const msg = c.commit.message.split('\n')[0]; 
@@ -301,15 +310,19 @@ const Plugins = [
                     const date = new Date(c.commit.author.date).toLocaleDateString();
                     
                     ctx.fillStyle = 'black';
-                    canvasUtils.fitTextSingleLine(ctx, `${index + 1}. ${msg}`, 30, yPos, width - 60, 28, 'bold');
+                    // Font size scales down slightly if we are packing a lot of commits into the screen
+                    const titleSize = Math.min(28, ySpacing * 0.45);
+                    canvasUtils.fitTextSingleLine(ctx, `${index + 1}. ${msg}`, 30, yPos, width - 60, titleSize, 'bold');
                     
                     ctx.fillStyle = '#333';
-                    canvasUtils.fitTextSingleLine(ctx, `${author} committed on ${date}`, 60, yPos + 35, width - 90, 22, 'italic');
+                    const subSize = Math.min(22, ySpacing * 0.35);
+                    canvasUtils.fitTextSingleLine(ctx, `${author} committed on ${date}`, 60, yPos + (ySpacing * 0.4), width - 90, subSize, 'italic');
                     
-                    yPos += 85;
+                    yPos += ySpacing;
                 });
             } catch (err) {
                 canvasUtils.fitTextSingleLine(ctx, 'Error fetching GitHub Repo. Is it public?', 30, 150, width - 60, 30);
+                console.error(err);
             }
         }
     },
@@ -478,6 +491,104 @@ const Plugins = [
 
             } catch (err) {
                 canvasUtils.fitTextMultiLine(ctx, 'Error fetching Cricket Data. Check your API key limits or proxy status.', 30, 150, width - 60, height - 200, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'huggingface_trending',
+        theme: 'AI & Research',
+        name: 'Hugging Face Trending',
+        description: 'Top trending AI models from Hugging Face.',
+        minInterval: 3600, // 1 Hour (Trending doesn't change every 5 mins)
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white'; 
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'black';
+            
+            canvasUtils.fitTextSingleLine(ctx, 'Trending AI Models (Hugging Face)', 30, 60, width - 60, 40, 'bold');
+            ctx.fillRect(30, 80, width - 60, 4);
+
+            try {
+                // Hugging Face has a free, public API for this
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent('https://huggingface.co/api/models?sort=trending&limit=4')}`);
+                const models = await res.json();
+                
+                let yPos = 140;
+                models.forEach((m, index) => {
+                    // Extract model name and task (e.g., text-generation, image-classification)
+                    let name = m.id;
+                    let task = m.pipeline_tag ? m.pipeline_tag.toUpperCase() : 'UNKNOWN TASK';
+                    let downloads = m.downloads ? m.downloads.toLocaleString() : 'N/A';
+                    
+                    ctx.fillStyle = 'black';
+                    canvasUtils.fitTextSingleLine(ctx, `${index + 1}. ${name}`, 30, yPos, width - 60, 28, 'bold');
+                    
+                    ctx.fillStyle = '#333';
+                    canvasUtils.fitTextSingleLine(ctx, `[${task}] | DLs: ${downloads}`, 60, yPos + 35, width - 90, 22, 'italic');
+                    
+                    yPos += 85;
+                });
+            } catch (err) {
+                canvasUtils.fitTextSingleLine(ctx, 'Error fetching Hugging Face data.', 30, 150, width - 60, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'latex_daily',
+        theme: 'AI & Research',
+        name: 'ML Equation of the Day',
+        description: 'Displays a beautiful AI/ML equation in LaTeX.',
+        minInterval: 3600, // 1 hour
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            // A curated list of beautiful ML equations
+            const equations = [
+                { title: "Scaled Dot-Product Attention (Transformers)", formula: "\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V" },
+                { title: "Kullback-Leibler Divergence", formula: "D_{KL}(P||Q) = \\sum_{x} P(x) \\log\\left(\\frac{P(x)}{Q(x)}\right)" },
+                { title: "Backpropagation (Chain Rule)", formula: "\\frac{\\partial E}{\\partial w_{ij}} = \\frac{\\partial E}{\\partial o_j} \\frac{\\partial o_j}{\\partial net_j} \\frac{\\partial net_j}{\\partial w_{ij}}" },
+                { title: "Bayes' Theorem", formula: "P(A|B) = \\frac{P(B|A)P(A)}{P(B)}" },
+                { title: "Mean Squared Error (MSE)", formula: "\\text{MSE} = \\frac{1}{n}\\sum_{i=1}^n(Y_i - \\hat{Y}_i)^2" },
+                { title: "Sigmoid Activation", formula: "\\sigma(x) = \\frac{1}{1 + e^{-x}}" }
+            ];
+            
+            // Pick a random equation
+            const eq = equations[Math.floor(Math.random() * equations.length)];
+            
+            ctx.fillStyle = 'white'; 
+            ctx.fillRect(0, 0, width, height);
+            
+            // Header
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            canvasUtils.fitTextSingleLine(ctx, eq.title, width / 2, 80, width - 40, 40, 'bold');
+            ctx.fillRect(40, 100, width - 80, 4);
+            ctx.textAlign = 'left'; // Reset
+
+            try {
+                // We use CodeCogs to generate a massive, crisp PNG of the LaTeX
+                const latexUrl = `https://latex.codecogs.com/png.image?\\dpi{300}\\bg_white\\Huge ${encodeURIComponent(eq.formula)}`;
+                
+                // Fetch it as a blob through the proxy to bypass Canvas Taint rules
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(latexUrl)}`);
+                const blob = await res.blob();
+                
+                // Convert blob to ImageBitmap so Canvas can draw it
+                const bitmap = await createImageBitmap(blob);
+                
+                // Center the equation image on the screen
+                const imgX = (width - bitmap.width) / 2;
+                const imgY = (height - bitmap.height) / 2 + 40; // Shift down slightly below header
+                
+                // Draw it!
+                ctx.drawImage(bitmap, imgX, imgY);
+
+            } catch (err) {
+                ctx.textAlign = 'center';
+                canvasUtils.fitTextSingleLine(ctx, 'Failed to render LaTeX image.', width / 2, height / 2, width - 60, 30);
+                ctx.textAlign = 'left';
                 console.error(err);
             }
         }
