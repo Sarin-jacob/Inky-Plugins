@@ -512,9 +512,10 @@ const Plugins = [
 
             try {
                 // Hugging Face has a free, public API for this
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent('https://huggingface.co/api/models?sort=trending&limit=4')}`);
-                const models = await res.json();
-                
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent('https://huggingface.co/models-json?sort=trending&withCount=true')}`);
+                const data = await res.json();
+                const models=data["models"].slice(0,4);
+                console.log(models);
                 let yPos = 140;
                 models.forEach((m, index) => {
                     // Extract model name and task (e.g., text-generation, image-classification)
@@ -569,7 +570,7 @@ const Plugins = [
 
             try {
                 // We use CodeCogs to generate a massive, crisp PNG of the LaTeX
-                const latexUrl = `https://latex.codecogs.com/png.image?\\dpi{300}\\bg_white\\Huge ${encodeURIComponent(eq.formula)}`;
+                const latexUrl = `https://latex.codecogs.com/png.image?\\dpi{200}\\bg_white\\Huge ${encodeURIComponent(eq.formula)}`;
                 
                 // Fetch it as a blob through the proxy to bypass Canvas Taint rules
                 const res = await fetch(`${CORS_PROXY}${encodeURIComponent(latexUrl)}`);
