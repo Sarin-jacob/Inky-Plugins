@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inky Hub | SM Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+</head>
+<body class="bg-gray-100 text-gray-900 font-sans antialiased">
+
+    <nav class="bg-black text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold tracking-tight">Inky Hub</h1>
+        <button id="settingsBtn" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded text-sm transition">
+            Settings
+        </button>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="lg:col-span-2 space-y-4">
+            <div class="bg-white p-4 rounded shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">Live Preview</h2>
+                    <span id="statusIndicator" class="text-xs px-2 py-1 bg-gray-200 rounded text-gray-600">Idle</span>
+                </div>
+                <div class="border-2 border-gray-300 w-full overflow-hidden bg-white aspect-[800/480] relative">
+                    <canvas id="inkyCanvas" width="800" height="480" class="w-full h-full object-contain"></canvas>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button id="pushNowBtn" class="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded w-full transition font-semibold">
+                        Push to Inky Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded shadow h-fit">
+            <h2 class="text-lg font-semibold mb-4 border-b pb-2">Available Plugins</h2>
+            <div id="pluginList" class="space-y-2">
+                </div>
+        </div>
+
+    </main>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50">
+        <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4">Inky Configuration</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Inky Local URL</label>
+                    <input type="text" id="inkyUrlInput" class="w-full border p-2 rounded" placeholder="http://inky.local">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Update Interval (Seconds)</label>
+                    <input type="number" id="intervalInput" class="w-full border p-2 rounded" value="15" min="1">
+                </div>
+                
+                <div class="border-t pt-4">
+                    <h3 class="text-md font-semibold mb-2">API Keys (Saved Locally)</h3>
+                    <div id="apiKeysContainer" class="space-y-2">
+                        </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button id="closeSettingsBtn" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                <button id="saveSettingsBtn" class="px-4 py-2 bg-black text-white rounded">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
