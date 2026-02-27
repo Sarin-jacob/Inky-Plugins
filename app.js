@@ -66,6 +66,7 @@ const Plugins = [
     {
         id: 'hello_world',
         name: 'Basic: Hello Inky',
+        minInterval : 10,
         description: 'A simple text display to test connection.',
         requiredKeys: [], // No API keys needed
         render: async (ctx, width, height, apiKeys) => {
@@ -83,9 +84,11 @@ const Plugins = [
     },
     {
         id: 'arxiv_ai',
-        name: 'Researcher: ArXiv AI Latest',
+        theme: 'AI & Research', // <-- New Theme Property
+        name: 'ArXiv AI Latest',
         description: 'Fetches the 3 latest cs.AI papers.',
-        requiredKeys: [], 
+        minInterval: 3600, 
+        requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, width, height);
@@ -129,6 +132,7 @@ const Plugins = [
         id: 'hn_top',
         name: 'Tech: Hacker News Top',
         description: 'Fetches the top 4 stories from Y Combinator.',
+        minInterval: 300,
         requiredKeys: [], 
         render: async (ctx, width, height, apiKeys) => {
             ctx.fillStyle = 'white'; 
@@ -164,9 +168,14 @@ const Plugins = [
     },
     {
         id: 'weather_dashboard',
-        name: 'Utility: Current Weather',
+        theme: 'Daily Utility', // <-- New Theme Property
+        name: 'Current Weather',
         description: 'Needs OpenWeather API key and City Name.',
-        requiredKeys: ['OpenWeather_API_Key', 'City_Name'], 
+        minInterval: 3600,
+        requiredKeys: [
+            { id: 'openweather_key', type: 'password', label: 'OpenWeather API Key' },
+            { id: 'city_name', type: 'text', label: 'City Name', placeholder: 'e.g., Khordha, IN' }
+        ],
         render: async (ctx, width, height, apiKeys) => {
             ctx.fillStyle = 'white'; 
             ctx.fillRect(0, 0, width, height);
@@ -206,9 +215,14 @@ const Plugins = [
     },
     {
         id: 'github_activity',
-        name: 'Tech: GitHub Recent Commits',
-        description: 'Shows latest commits. Needs Repo format (user/repo).',
-        requiredKeys: ['Target_GitHub_Repo'], 
+        theme: 'Tech & Dev', // <-- New Theme Property
+        name: 'GitHub Recent Commits',
+        description: 'Shows latest commits for a specific repo.',
+        minInterval: 300,
+        requiredKeys: [
+            { id: 'github_repo', type: 'text', label: 'Target Repo (user/repo)' },
+            { id: 'commit_count', type: 'number', label: 'Number of Commits' }
+        ],
         render: async (ctx, width, height, apiKeys) => {
             ctx.fillStyle = 'white'; 
             ctx.fillRect(0, 0, width, height);
@@ -246,9 +260,11 @@ const Plugins = [
     },
     {
         id: 'naruto_quotes',
-        name: 'Aesthetic: Naruto Wisdom',
+        theme: 'Fun & Aesthetic', // <-- New Theme Property
+        name: 'Naruto Wisdom',
         description: 'Random quote generator using multi-line wrap.',
-        requiredKeys: [], 
+        minInterval: 60,
+        requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
             // A small sample, you can replace this by fetching your 500+ CSV later
             const quotes = [
@@ -307,40 +323,83 @@ function init() {
 function renderPluginList() {
     const list = document.getElementById('pluginList');
     list.innerHTML = '';
-    
-    Plugins.forEach(plugin => {
-        const div = document.createElement('div');
-        const isActive = plugin.id === config.activePluginId;
-        div.className = `p-3 border rounded cursor-pointer transition ${isActive ? 'bg-black text-white' : 'hover:bg-gray-100'}`;
-        div.innerHTML = `
-            <div class="font-bold">${plugin.name}</div>
-            <div class="text-sm ${isActive ? 'text-gray-300' : 'text-gray-500'}">${plugin.description}</div>
-        `;
-        div.onclick = () => {
-            config.activePluginId = plugin.id;
-            localStorage.setItem('inkyActivePlugin', plugin.id);
-            renderPluginList(); // re-render to update UI colors
-            forceUpdate(); // immediate preview
-        };
-        list.appendChild(div);
-    });
+    // Group plugins by their theme
+    const groupedPlugins = Plugins.reduce((acc, plugin) => {
+        const theme = plugin.theme || 'Uncategorized';
+        if (!acc[theme]) acc[theme] = [];
+        acc[theme].push(plugin);
+        return acc;
+    }, {});
+    // Iterate through the grouped categories
+    for (const [theme, pluginsInTheme] of Object.entries(groupedPlugins)) {
+        // 1. Create the Category Header
+        const header = document.createElement('div');
+        header.className = 'text-xs font-bold text-gray-500 uppercase tracking-widest mt-5 mb-2 first:mt-0 px-1 border-b border-gray-200 pb-1';
+        header.innerText = theme;
+        list.appendChild(header);
+        // 2. Render the Plugins under this category
+        pluginsInTheme.forEach(plugin => {
+            const div = document.createElement('div');
+            const isActive = plugin.id === config.activePluginId;
+            // Apply distinct styling if active
+            div.className = `p-3 mb-2 border rounded cursor-pointer transition duration-150 ${
+                isActive 
+                ? 'bg-black text-white border-black shadow-md' 
+                : 'hover:bg-gray-50 bg-white border-gray-200'
+            }`;
+            div.innerHTML = `
+                <div class="font-bold flex justify-between items-center">
+                    <span>${plugin.name}</span>
+                    ${isActive ? '<span class="h-2 w-2 bg-green-400 rounded-full animate-pulse"></span>' : ''}
+                </div>
+                <div class="text-xs mt-1 leading-relaxed ${isActive ? 'text-gray-300' : 'text-gray-500'}">
+                    ${plugin.description}
+                </div>
+                <div class="mt-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono ${
+                    isActive ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
+                }">
+                    Min: ${plugin.minInterval || 60}s
+                </div>
+            `;
+            div.onclick = () => {
+                config.activePluginId = plugin.id;
+                localStorage.setItem('inkyActivePlugin', plugin.id);
+                renderPluginList(); 
+                runLoop(); // Immediately trigger the new plugin and reset its specific timer
+            };
+            list.appendChild(div);
+        });
+    }
 }
 
 function buildApiKeyInputs() {
     const container = document.getElementById('apiKeysContainer');
     container.innerHTML = '';
     
-    const allRequiredKeys = new Set();
-    Plugins.forEach(p => p.requiredKeys.forEach(k => allRequiredKeys.add(k)));
+    // Use a Map to ensure unique keys in case multiple plugins share an API
+    const uniqueKeys = new Map();
+    Plugins.forEach(p => {
+        if (p.requiredKeys) {
+            p.requiredKeys.forEach(k => uniqueKeys.set(k.id, k));
+        }
+    });
     
-    allRequiredKeys.forEach(key => {
+    uniqueKeys.forEach(keyDef => {
         const wrapper = document.createElement('div');
-        const hasKey = !!config.apiKeys[key];
-        const placeholderText = hasKey ? '(unchanged)' : 'Enter API Key';
-        
+        const savedValue = config.apiKeys[keyDef.id] || '';
+        let inputHtml = '';
+        // Handle different input types smartly
+        if (keyDef.type === 'password') {
+            const placeholder = savedValue ? '(unchanged)' : 'Enter API Key';
+            inputHtml = `<input type="password" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm" placeholder="${placeholder}">`;
+        } else if (keyDef.type === 'number') {
+            inputHtml = `<input type="number" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
+        } else { 
+            inputHtml = `<input type="text" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
+        }
         wrapper.innerHTML = `
-            <label class="block text-sm font-medium mb-1">${key}</label>
-            <input type="password" data-key="${key}" class="apikey-input w-full border p-2 rounded text-sm" placeholder="${placeholderText}">
+            <label class="block text-sm font-medium mb-1 mt-3">${keyDef.label || keyDef.id}</label>
+            ${inputHtml}
         `;
         container.appendChild(wrapper);
     });
@@ -374,9 +433,16 @@ async function forceUpdate() {
 }
 
 function runLoop() {
-    if (renderTimer) clearInterval(renderTimer);
-    forceUpdate();
-    renderTimer = setInterval(forceUpdate, config.interval * 1000);
+    // Clear the existing timer if it exists
+    if (renderTimer) clearTimeout(renderTimer); 
+    // Run the update, and ONLY start the next countdown when this one finishes
+    forceUpdate().finally(() => {
+        const plugin = Plugins.find(p => p.id === config.activePluginId) || Plugins[0];
+        const safeMin = plugin.minInterval; 
+        const intervalToUse = Math.max(config.interval, safeMin);
+        console.log(`[Rate Limit] Next update scheduled in ${intervalToUse} seconds.`);
+        renderTimer = setTimeout(runLoop, intervalToUse * 1000);
+    });
 }
 
 async function renderActivePlugin() {
