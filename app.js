@@ -181,7 +181,7 @@ const Plugins = [
             ctx.fillRect(0, 0, width, height);
             ctx.fillStyle = 'black';
             
-            const key = apiKeys['OpenWeather_API_Key'];
+            const key = apiKeys['openweather_key'];
             // Default to Khordha if they leave it blank, since that's local context
             const city = apiKeys['City_Name'] || 'Khordha'; 
 
@@ -229,14 +229,16 @@ const Plugins = [
             ctx.fillStyle = 'black';
             
             // Default to your Inky repo if blank
-            const repo = apiKeys['Target_GitHub_Repo'] || 'Sarin-jacob/Inky'; 
+            const repo = apiKeys['github_repo'] || 'Sarin-jacob/Inky'; 
+            const commit_count = apiKeys['commit_count'] || 4;
             
             canvasUtils.fitTextSingleLine(ctx, `Recent Commits: ${repo}`, 30, 60, width - 60, 40, 'bold');
             ctx.fillRect(30, 80, width - 60, 4);
 
             try {
                 const res = await fetch(`https://api.github.com/repos/${repo}/commits`);
-                const commits = (await res.json()).slice(0, 4);
+                const commits = (await res.json()).slice(0, commit_count);
+                console.log(repo);
                 
                 let yPos = 140;
                 commits.forEach((c, index) => {
@@ -310,8 +312,17 @@ function init() {
     // Event Listeners
     document.getElementById('pushNowBtn').addEventListener('click', forceUpdate);
     document.getElementById('settingsBtn').addEventListener('click', () => {
+        // Load global settings
         document.getElementById('inkyUrlInput').value = config.inkyUrl;
         document.getElementById('intervalInput').value = config.interval;
+        // Find active plugin to update the modal title/subtitle
+        const activePlugin = Plugins.find(p => p.id === config.activePluginId);
+        const pluginSettingsHeader = document.getElementById('activePluginNameLabel');
+        if (pluginSettingsHeader) {
+            pluginSettingsHeader.innerText = activePlugin ? activePlugin.name : 'Global';
+        }
+        // Build the specific inputs
+        buildApiKeyInputs();
         document.getElementById('settingsModal').classList.remove('hidden');
     });
     document.getElementById('closeSettingsBtn').addEventListener('click', () => {
@@ -376,29 +387,39 @@ function buildApiKeyInputs() {
     const container = document.getElementById('apiKeysContainer');
     container.innerHTML = '';
     
-    // Use a Map to ensure unique keys in case multiple plugins share an API
-    const uniqueKeys = new Map();
-    Plugins.forEach(p => {
-        if (p.requiredKeys) {
-            p.requiredKeys.forEach(k => uniqueKeys.set(k.id, k));
-        }
-    });
+    // Find the currently selected plugin
+    const activePlugin = Plugins.find(p => p.id === config.activePluginId);
     
-    uniqueKeys.forEach(keyDef => {
+    // If no keys are required, show a friendly message
+    if (!activePlugin || !activePlugin.requiredKeys || activePlugin.requiredKeys.length === 0) {
+        container.innerHTML = `
+            <div class="text-sm text-gray-500 italic p-3 bg-gray-50 border rounded text-center">
+                No API keys or extra settings required for <b>${activePlugin ? activePlugin.name : 'this plugin'}</b>.
+            </div>
+        `;
+        return;
+    }
+    
+    // Create inputs ONLY for the active plugin
+    activePlugin.requiredKeys.forEach(keyDef => {
         const wrapper = document.createElement('div');
         const savedValue = config.apiKeys[keyDef.id] || '';
+        
         let inputHtml = '';
-        // Handle different input types smartly
+        
         if (keyDef.type === 'password') {
             const placeholder = savedValue ? '(unchanged)' : 'Enter API Key';
-            inputHtml = `<input type="password" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm" placeholder="${placeholder}">`;
+            inputHtml = `<input type="password" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${placeholder}">`;
+            
         } else if (keyDef.type === 'number') {
-            inputHtml = `<input type="number" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
+            inputHtml = `<input type="number" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
+            
         } else { 
-            inputHtml = `<input type="text" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
+            inputHtml = `<input type="text" data-key="${keyDef.id}" class="apikey-input w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
         }
+        
         wrapper.innerHTML = `
-            <label class="block text-sm font-medium mb-1 mt-3">${keyDef.label || keyDef.id}</label>
+            <label class="block text-sm font-medium mb-1 mt-3 text-gray-700">${keyDef.label || keyDef.id}</label>
             ${inputHtml}
         `;
         container.appendChild(wrapper);
@@ -423,6 +444,9 @@ function saveSettings() {
     
     document.getElementById('settingsModal').classList.add('hidden');
     
+    setStatus('Applying new settings...');
+    lastFrameData = null;
+    console.log('[Settings] Saved. Forcing immediate update loop...');
     // Reset timer with new interval
     runLoop();
 }
@@ -438,7 +462,7 @@ function runLoop() {
     // Run the update, and ONLY start the next countdown when this one finishes
     forceUpdate().finally(() => {
         const plugin = Plugins.find(p => p.id === config.activePluginId) || Plugins[0];
-        const safeMin = plugin.minInterval; 
+        const safeMin = plugin.minInterval || 2; 
         const intervalToUse = Math.max(config.interval, safeMin);
         console.log(`[Rate Limit] Next update scheduled in ${intervalToUse} seconds.`);
         renderTimer = setTimeout(runLoop, intervalToUse * 1000);
@@ -449,21 +473,46 @@ async function renderActivePlugin() {
     setStatus('Rendering...');
     const plugin = Plugins.find(p => p.id === config.activePluginId) || Plugins[0];
     
-    // Check missing keys
-    const missingKeys = plugin.requiredKeys.filter(k => !config.apiKeys[k]);
+    // Check missing keys using the new object structure (keyDef.id)
+    const missingKeys = plugin.requiredKeys.filter(keyDef => {
+        const val = config.apiKeys[keyDef.id];
+        return val === undefined || val.trim() === '';
+    });
+
     if (missingKeys.length > 0) {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, 800, 480);
         ctx.fillStyle = 'black';
-        ctx.font = '30px Arial';
-        ctx.fillText(`Missing API Keys: ${missingKeys.join(', ')}`, 50, 100);
-        ctx.fillText('Please add them in Settings.', 50, 150);
+        
+        // Extract the user-friendly labels for the error message
+        const missingNames = missingKeys.map(k => k.label || k.id).join(', ');
+        
+        ctx.font = 'bold 35px Arial';
+        ctx.fillText('Missing Configuration:', 50, 100);
+        
+        ctx.font = '28px Arial';
+        // Using the wrapText utility we built earlier so long lists don't run off-screen
+        canvasUtils.wrapText(ctx, missingNames, 50, 160, 700, 40);
+        
+        ctx.font = 'italic 25px Arial';
+        ctx.fillText('Please click "Settings" to configure this plugin.', 50, 300);
+        
         setStatus('Key Missing');
         return;
     }
 
-    await plugin.render(ctx, 800, 480, config.apiKeys);
-    setStatus('Ready to Push');
+    try {
+        await plugin.render(ctx, 800, 480, config.apiKeys);
+        setStatus('Ready to Push');
+    } catch (err) {
+        console.error(`Error rendering plugin ${plugin.id}:`, err);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, 800, 480);
+        ctx.fillStyle = 'black';
+        ctx.font = '30px Arial';
+        ctx.fillText('Plugin Render Error. Check console.', 50, 100);
+        setStatus('Render Error');
+    }
 }
 
 async function pushToInky() {
