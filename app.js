@@ -601,17 +601,26 @@ const Plugins = [
 
 function init() {
     const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
     
-    // Check local storage or system preference on load
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    // Setup initial theme and icon
+    const isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
         document.documentElement.classList.add('dark');
+        themeIcon.setAttribute('data-lucide', 'sun'); // Show sun if we are in dark mode
     } else {
         document.documentElement.classList.remove('dark');
+        themeIcon.setAttribute('data-lucide', 'moon');
     }
 
     themeToggleBtn.addEventListener('click', () => {
         document.documentElement.classList.toggle('dark');
-        localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        const isNowDark = document.documentElement.classList.contains('dark');
+        localStorage.theme = isNowDark ? 'dark' : 'light';
+        
+        // Swap the icon
+        themeIcon.setAttribute('data-lucide', isNowDark ? 'sun' : 'moon');
+        lucide.createIcons(); // Force re-render of the specific icon
     });
 
     // Search Filtering Logic
@@ -622,6 +631,7 @@ function init() {
     renderPluginList();
     buildApiKeyInputs();
     runLoop();
+    lucide.createIcons();
     
     // Event Listeners
     document.getElementById('pushNowBtn').addEventListener('click', forceUpdate);
@@ -699,7 +709,7 @@ function renderPluginList() {
                 <div class="mt-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono ${
                     isActive ? 'bg-gray-800 dark:bg-gray-300 text-gray-300 dark:text-gray-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
                 }">
-                    Min: ${plugin.minInterval || 60}s
+                    <i data-lucide="clock" class="w-3 h-3 mr-1"></i>  ${plugin.minInterval || 3}s
                 </div>
             `;
             
@@ -713,6 +723,7 @@ function renderPluginList() {
             list.appendChild(div);
         });
     }
+    lucide.createIcons();
 }
 
 function buildApiKeyInputs() {
