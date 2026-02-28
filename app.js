@@ -1695,28 +1695,36 @@ const Plugins = [
             else if (phase >= 0.73 && phase < 0.77) phaseName = 'Third Quarter';
             else if (phase >= 0.77 && phase < 0.98) phaseName = 'Waning Crescent';
 
-            // --- Draw Background (Blueprint Hashlines) ---
+            // --- Draw Background (Tight Cross-Hatch) ---
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, width, height);
             
             ctx.strokeStyle = '#ccc'; // Light grey dithers nicely
-            ctx.lineWidth = 2;
-            const gap = 16; // Spacing between hash lines
+            ctx.lineWidth = 1; // Thinner lines prevent the cross-hatch from getting muddy
+            const gap = 10; // Closer together!
             
-            // Draw diagonal lines across the entire canvas
-            for (let i = -height; i < width * 2; i += gap) {
+            // Draw diagonal lines (Top-Right to Bottom-Left)
+            for (let i = -height; i < width + height; i += gap) {
                 ctx.beginPath();
                 ctx.moveTo(i, 0);
-                ctx.lineTo(i - height, height); // Angled bottom-left
+                ctx.lineTo(i - height, height);
+                ctx.stroke();
+            }
+
+            // Draw diagonal lines (Top-Left to Bottom-Right)
+            for (let i = -height; i < width + height; i += gap) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i + height, height);
                 ctx.stroke();
             }
 
             const cx = width / 2;
-            const cy = height / 2 - 30; // Shifted up slightly to leave room for text
+            const cy = height / 2 - 30; // Shifted up slightly
             const radius = 150;
 
             // --- Draw the Moon ---
-            // 1. Draw the base white circle
+            // 1. Draw the base white circle (Erases the cross-hatch underneath)
             ctx.fillStyle = 'white';
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -1771,6 +1779,110 @@ const Plugins = [
             canvasUtils.fitTextSingleLine(ctx, `Illumination: ${illumination}%  |  Age: ${currentAge.toFixed(1)} Days`, cx, height - 35, width - 100, 18, 'normal', 'monospace');
             
             ctx.textAlign = 'left'; // Reset
+        }
+    },
+    {
+        id: 'random_fact',
+        theme: 'Knowledge & Trivia',
+        name: 'Random Fun Fact',
+        description: 'Displays a completely random (but true) interesting fact.',
+        minInterval: 3600, // 1 hour
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white'; 
+            ctx.fillRect(0, 0, width, height);
+            
+            try {
+                // Free, no-auth API for random facts
+                const url = 'https://uselessfacts.jsph.pl/api/v2/facts/random';
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const data = await res.json();
+                const fact = data.text;
+
+                // --- Header ---
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, 'DID YOU KNOW?', 40, 80, width - 80, 45, 'bold');
+                ctx.fillRect(40, 100, width - 80, 4);
+
+                // --- Huge Decorative Quotes ---
+                ctx.fillStyle = '#ccc'; // Dithers to light grey
+                ctx.font = 'bold 150px Georgia';
+                ctx.fillText('"', 40, 220);
+
+                // --- The Fact ---
+                ctx.fillStyle = 'black';
+                // We start the text a bit to the right to leave room for the giant quote mark
+                canvasUtils.fitTextMultiLine(ctx, fact, 90, 160, width - 140, 250, 40, 'normal', 'Arial', 1.4);
+
+            } catch (err) {
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, 'Error fetching daily fact.', 40, 150, width - 80, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'daily_trivia',
+        theme: 'Knowledge & Trivia',
+        name: 'Trivia Challenge',
+        description: 'A random trivia question and answer from OpenTDB.',
+        minInterval: 3600, // 1 hour
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white'; 
+            ctx.fillRect(0, 0, width, height);
+            
+            try {
+                // Free Trivia API (1 random question)
+                const url = 'https://opentdb.com/api.php?amount=1';
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const data = await res.json();
+                const item = data.results[0];
+
+                // Native browser helper to safely decode HTML entities like &quot; or &#039;
+                const decodeHTML = (html) => {
+                    const txt = document.createElement("textarea");
+                    txt.innerHTML = html;
+                    return txt.value;
+                };
+
+                const category = decodeHTML(item.category);
+                const question = decodeHTML(item.question);
+                const answer = decodeHTML(item.correct_answer);
+
+                // --- Black Header Block ---
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, width, 130);
+
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                canvasUtils.fitTextSingleLine(ctx, 'TRIVIA CHALLENGE', width / 2, 60, width - 80, 40, 'bold', 'monospace');
+                
+                ctx.fillStyle = '#ccc';
+                canvasUtils.fitTextSingleLine(ctx, `Category: ${category}`, width / 2, 100, width - 80, 20, 'italic');
+                
+                ctx.textAlign = 'left';
+
+                // --- The Question ---
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextMultiLine(ctx, question, 40, 180, width - 80, 180, 45, 'bold');
+
+                // --- The Answer Block ---
+                // Hidden inside a solid black block at the bottom
+                ctx.fillStyle = 'black';
+                ctx.fillRect(40, height - 90, width - 80, 70);
+                
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                canvasUtils.fitTextSingleLine(ctx, `ANSWER: ${answer}`, width / 2, height - 48, width - 100, 26, 'bold', 'monospace');
+                
+                ctx.textAlign = 'left'; // Reset
+
+            } catch (err) {
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, 'Error fetching trivia question.', 40, 200, width - 80, 30);
+                console.error(err);
+            }
         }
     }
 ];
