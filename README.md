@@ -62,8 +62,9 @@ The Web Hub comes pre-loaded with 20+ highly polished plugins tailored for devel
 
 ## 🚀 How to Use the Web Hub
 
+1. Set **Inky** to `API Push Mode`
 1. Open the [Inky Hub](https://sarin-jacob.github.io/Inky-Plugins).
-2. Click **Global Settings** (⚙️) to enter your Inky's local IP address (e.g., `http://inky.local`) and your desired refresh interval.
+2. Click **Settings** (⚙️) to enter your Inky's local IP address (e.g., `http://inky.local`) and your desired refresh interval.
 3. Browse the Plugin Library. If a plugin requires an API key (like OpenWeather or GitHub), click **Settings** to securely add it.
 4. The canvas will render a live preview. The Hub will automatically start pushing the rendered frame to your display based on your interval!
 
