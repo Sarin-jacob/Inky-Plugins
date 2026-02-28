@@ -1357,6 +1357,108 @@ const Plugins = [
             ctx.fillText('IN', startX - 20, startY + 14);
             ctx.fillText('OUT', startX + (cols * cellSize) + 4, startY + (rows * cellSize) - 4);
         }
+    },
+    {
+        id: 'markdown_notes',
+        theme: 'Productivity',
+        name: 'Markdown Scratchpad',
+        description: 'Render custom notes, lists, and to-dos using simple Markdown.',
+        minInterval: 60,
+        requiredKeys: [
+            { id: 'md_content', type: 'textarea', label: 'Notes Content (Markdown format)', placeholder: '# Daily Plan\n\n- Review PRs\n[ ] Fix server bug\n[x] Drink coffee' }
+        ],
+        render: async (ctx, width, height, apiKeys) => {
+            // Default placeholder if the user hasn't typed anything yet
+            const content = apiKeys['md_content'] || '# Scratchpad\n\nNothing written yet...\n\nClick Settings to add your notes.';
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'black';
+            
+            const lines = content.split('\n');
+            let yPos = 50;
+            const startX = 40;
+            const maxW = width - 80;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                
+                if (!line) {
+                    yPos += 20; // Add paragraph spacing for empty lines
+                    continue;
+                }
+
+                let textX = startX;
+                let drawW = maxW;
+                let size = 28;
+                let weight = 'normal';
+                let isTask = false;
+                let isChecked = false;
+
+                // --- Simple Markdown Parser ---
+                if (line.startsWith('# ')) {
+                    size = 48; weight = 'bold';
+                    line = line.substring(2);
+                    yPos += 15; // Extra padding above headers
+                } else if (line.startsWith('## ')) {
+                    size = 36; weight = 'bold';
+                    line = line.substring(3);
+                    yPos += 10;
+                } else if (line.startsWith('- ') || line.startsWith('* ')) {
+                    line = line.substring(2);
+                    // Draw Bullet Point
+                    ctx.beginPath();
+                    ctx.arc(startX + 10, yPos + 14, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    textX = startX + 35;
+                    drawW = maxW - 35;
+                } else if (line.startsWith('[ ] ')) {
+                    isTask = true;
+                    line = line.substring(4);
+                } else if (line.startsWith('[x] ') || line.startsWith('[X] ')) {
+                    isTask = true;
+                    isChecked = true;
+                    line = line.substring(4);
+                    ctx.fillStyle = '#666'; // Dim completed tasks
+                }
+
+                // --- Draw Checkboxes ---
+                if (isTask) {
+                    textX = startX + 45;
+                    drawW = maxW - 45;
+                    
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = isChecked ? '#666' : 'black';
+                    ctx.strokeRect(startX + 2, yPos + 2, 24, 24);
+                    
+                    if (isChecked) {
+                        // Draw a checkmark inside the box
+                        ctx.beginPath();
+                        ctx.moveTo(startX + 6, yPos + 14);
+                        ctx.lineTo(startX + 12, yPos + 20);
+                        ctx.lineTo(startX + 22, yPos + 6);
+                        ctx.stroke();
+                        
+                        // Draw a strikethrough line across the text
+                        const textWidth = ctx.measureText(line).width;
+                        ctx.beginPath();
+                        ctx.moveTo(textX, yPos + 14);
+                        ctx.lineTo(textX + textWidth + 10, yPos + 14);
+                        ctx.stroke();
+                    }
+                }
+
+                // Render the text line using the smart wrapper
+                const result = canvasUtils.fitTextMultiLine(ctx, line, textX, yPos, drawW, height - yPos, size, weight);
+                yPos += result.totalHeight + 15; // Move down for the next line
+
+                ctx.fillStyle = 'black'; // Reset fill style for next loop
+                
+                // Stop rendering if we've run off the bottom of the e-ink screen
+                if (yPos > height - 20) break;
+            }
+        }
     }
 ];
 
@@ -1519,7 +1621,8 @@ function buildApiKeyInputs() {
             
         } else if (keyDef.type === 'number') {
             inputHtml = `<input type="number" data-key="${keyDef.id}" class="apikey-input dark:text-gray-50 dark:bg-gray-800 w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
-            
+        } else if (keyDef.type === 'textarea') {
+            inputHtml = `<textarea data-key="${keyDef.id}" class="apikey-input w-full border dark:border-gray-600 bg-white dark:bg-gray-700 p-2 rounded focus:ring-black dark:focus:ring-gray-500 font-mono text-sm" rows="6" placeholder="${keyDef.placeholder || ''}">${savedValue}</textarea>`;   
         } else { 
             inputHtml = `<input type="text" data-key="${keyDef.id}" class="apikey-input dark:text-gray-50 dark:bg-gray-800 w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
         }
