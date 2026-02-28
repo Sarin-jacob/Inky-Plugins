@@ -917,104 +917,157 @@ const Plugins = [
         id: 'github_profile',
         theme: 'Tech & Dev',
         name: 'GitHub Hacker Card',
-        description: 'Profile stats and the 52-week contribution map.',
+        description: 'Profile stats, active repos, and the 52-week contribution map.',
         minInterval: 3600, // 1 hour
         requiredKeys: [
-            { id: 'github_username', type: 'text', label: 'GitHub Username', placeholder: 'Sarin-jacob' }
+            { id: 'github_username', type: 'text', label: 'GitHub Username', placeholder: 'Sarin-jacob' },
+            { id: 'github_pat', type: 'password', label: 'Personal Access Token (Optional, to show private commits)', placeholder: 'ghp_xxxxxxxxxxxx' }
         ],
         render: async (ctx, width, height, apiKeys) => {
             const username = apiKeys['github_username'] || 'Sarin-jacob';
+            const pat = apiKeys['github_pat'];
             
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, width, height);
             
             try {
+                // Setup auth headers if a PAT was provided
+                const headers = {};
+                if (pat) headers['Authorization'] = `Bearer ${pat}`;
+
                 // 1. Fetch User Stats
-                const userRes = await fetch(`https://api.github.com/users/${username}`);
+                const userRes = await fetch(`https://api.github.com/users/${username}`, { headers });
                 if (!userRes.ok) throw new Error('User not found');
                 const user = await userRes.json();
 
-                // 2. Fetch Contributions HTML via Proxy (GitHub returns the graph as a DOM fragment)
-                const contribUrl = `https://github.com/users/${username}/contributions`;
-                const contribRes = await fetch(`${CORS_PROXY}${encodeURIComponent(contribUrl)}`);
-                const html = await contribRes.text();
+                // 2. Fetch Repos to calculate Latest and Most Worked
+                // sort=updated ensures the first result is the latest active.
+                const reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`, { headers });
+                const repos = await reposRes.json();
                 
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
+                let latestRepo = 'None';
+                let topRepo = 'None';
                 
-                // GitHub uses data-level="0" to "4" to show commit density. 
-                // We grab all of them in order (they are returned week by week, Sun-Sat).
-                const cells = Array.from(doc.querySelectorAll('[data-level]'));
-                const levels = cells.map(c => parseInt(c.getAttribute('data-level')) || 0);
+                if (repos && repos.length > 0) {
+                    latestRepo = repos[0].name;
+                    // Find the repo with the largest size as a proxy for "most worked on / largest codebase"
+                    const biggest = repos.reduce((prev, current) => (prev.size > current.size) ? prev : current);
+                    topRepo = biggest.name;
+                }
+
+                // 3. Fetch Contributions
+                let levels = [];
+                if (pat) {
+                    // Use GitHub's GraphQL API for private/authenticated commits
+                    const query = `
+                    query {
+                      user(login: "${username}") {
+                        contributionsCollection {
+                          contributionCalendar {
+                            weeks {
+                              contributionDays {
+                                contributionLevel
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }`;
+                    const gqlRes = await fetch('https://api.github.com/graphql', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${pat}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query })
+                    });
+                    const gqlData = await gqlRes.json();
+                    if (gqlData.errors) throw new Error(gqlData.errors[0].message);
+                    
+                    const weeks = gqlData.data.user.contributionsCollection.contributionCalendar.weeks;
+                    // Map GraphQL text levels to 0-4 numbers
+                    const levelMap = { 'NONE': 0, 'FIRST_QUARTILE': 1, 'SECOND_QUARTILE': 2, 'THIRD_QUARTILE': 3, 'FOURTH_QUARTILE': 4 };
+                    
+                    weeks.forEach(week => {
+                        week.contributionDays.forEach(day => {
+                            levels.push(levelMap[day.contributionLevel] || 0);
+                        });
+                    });
+                } else {
+                    // Fallback to HTML scraper for public-only commits
+                    const contribUrl = `https://github.com/users/${username}/contributions`;
+                    const contribRes = await fetch(`${CORS_PROXY}${encodeURIComponent(contribUrl)}`);
+                    const html = await contribRes.text();
+                    
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const cells = Array.from(doc.querySelectorAll('[data-level]'));
+                    levels = cells.map(c => parseInt(c.getAttribute('data-level')) || 0);
+                }
 
                 // --- Drawing the Layout ---
 
-                // Header Background
                 ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, width, 140);
-                
-                // Name & Handle
-                ctx.fillStyle = 'white';
                 canvasUtils.fitTextSingleLine(ctx, (user.name || user.login).toUpperCase(), 40, 60, width - 80, 50, 'bold');
                 
-                ctx.fillStyle = '#ccc';
-                canvasUtils.fitTextSingleLine(ctx, `@${user.login}  |  Repos: ${user.public_repos}  |  Followers: ${user.followers}`, 40, 110, width - 80, 24, 'normal', 'monospace');
+                ctx.fillStyle = '#555';
+                canvasUtils.fitTextSingleLine(ctx, `@${user.login}  |  Followers: ${user.followers}  |  Repos: ${user.public_repos}`, 40, 100, width - 80, 24, 'bold', 'monospace');
                 
-                // Bio
+                // Draw Repo Stats Divider
                 ctx.fillStyle = 'black';
-                if (user.bio) {
-                    canvasUtils.fitTextMultiLine(ctx, user.bio, 40, 170, width - 80, 80, 24, 'italic');
-                }
+                ctx.fillRect(40, 130, width - 80, 2);
+                
+                // Draw Active & Top Repos
+                ctx.fillStyle = '#333';
+                canvasUtils.fitTextSingleLine(ctx, `Latest Active: ${latestRepo}`, 40, 170, width / 2 - 50, 22, 'bold', 'monospace');
+                canvasUtils.fitTextSingleLine(ctx, `Most Worked: ${topRepo}`, width / 2 + 10, 170, width / 2 - 50, 22, 'bold', 'monospace');
+                
+                ctx.fillStyle = 'black';
+                ctx.fillRect(40, 195, width - 80, 2);
 
                 // --- Drawing the Contribution Graph ---
                 const boxSize = 10;
-                const gap = 4;
-                const startX = 60;
-                const startY = 320;
+                const gap = 3; // Reduced gap slightly to ensure 52 weeks fits perfectly in 800px width
+                const startX = 40;
+                const startY = 280;
                 
                 ctx.fillStyle = 'black';
-                canvasUtils.fitTextSingleLine(ctx, 'Last 365 Days of Code', startX - 20, startY - 20, width - 80, 24, 'bold');
+                canvasUtils.fitTextSingleLine(ctx, `Last 365 Days of Code ${pat ? '(Including Private)' : ''}`, startX, startY - 20, width - 80, 24, 'bold');
                 
-                // Draw Days of week labels (Mon, Wed, Fri)
+                // Draw Day Labels
                 ctx.font = '14px monospace';
-                ctx.fillText('Mon', startX - 40, startY + (boxSize+gap)*1 + 10);
-                ctx.fillText('Wed', startX - 40, startY + (boxSize+gap)*3 + 10);
-                ctx.fillText('Fri', startX - 40, startY + (boxSize+gap)*5 + 10);
+                ctx.fillStyle = '#555';
+                ctx.fillText('Mon', startX, startY + (boxSize+gap)*1 + 10);
+                ctx.fillText('Wed', startX, startY + (boxSize+gap)*3 + 10);
+                ctx.fillText('Fri', startX, startY + (boxSize+gap)*5 + 10);
 
-                // Draw the Grid
-                let col = 0;
-                let row = 0;
-                
+                // Shift the actual graph right to make room for the Mon/Wed/Fri labels
+                const graphStartX = startX + 40;
+
                 for (let i = 0; i < levels.length; i++) {
                     const level = levels[i];
-                    const x = startX + (col * (boxSize + gap));
+                    // GitHub maps are 7 rows tall (Sun to Sat)
+                    const row = i % 7; 
+                    const col = Math.floor(i / 7);
+                    
+                    const x = graphStartX + (col * (boxSize + gap));
                     const y = startY + (row * (boxSize + gap));
                     
                     ctx.fillStyle = 'black';
                     ctx.strokeStyle = 'black';
                     ctx.lineWidth = 1;
                     
-                    // B&W "Grass" Logic
+                    // B&W "Grass" Rendering Logic
                     if (level === 0) {
-                        ctx.strokeRect(x, y, boxSize, boxSize); // Empty
+                        ctx.strokeRect(x, y, boxSize, boxSize); // Empty outline
                     } else if (level === 1 || level === 2) {
                         ctx.strokeRect(x, y, boxSize, boxSize); 
-                        ctx.fillRect(x + 2, y + 2, boxSize - 4, boxSize - 4); // Medium dot
+                        ctx.fillRect(x + 2, y + 2, boxSize - 4, boxSize - 4); // Medium dot inside
                     } else {
-                        ctx.fillRect(x, y, boxSize, boxSize); // Solid block for heavy days
-                    }
-
-                    row++;
-                    // GitHub grid is 7 days tall (Sunday to Saturday)
-                    if (row === 7) {
-                        row = 0;
-                        col++;
+                        ctx.fillRect(x, y, boxSize, boxSize); // Solid black block for heavy days
                     }
                 }
 
             } catch (err) {
                 ctx.fillStyle = 'black';
-                canvasUtils.fitTextSingleLine(ctx, `Error fetching profile or graph for @${username}`, 30, 150, width - 60, 30);
+                canvasUtils.fitTextSingleLine(ctx, `Error fetching profile or graph. Check API limits or Token.`, 30, 150, width - 60, 30);
                 console.error(err);
             }
         }
