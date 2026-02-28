@@ -1678,14 +1678,12 @@ const Plugins = [
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
             // --- Astronomical Math ---
-            // Calculate moon age based on known new moon (Jan 6, 2000 18:14 UTC)
             const synodicMonth = 29.53058867;
             const newMoon2000 = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)).getTime();
             const now = Date.now();
             const daysSinceNew = (now - newMoon2000) / (1000 * 60 * 60 * 24);
             const currentAge = daysSinceNew % synodicMonth;
             
-            // Phase goes from 0.0 (New) to 0.5 (Full) to 1.0 (New)
             const phase = currentAge / synodicMonth; 
             
             let phaseName = 'New Moon';
@@ -1697,16 +1695,28 @@ const Plugins = [
             else if (phase >= 0.73 && phase < 0.77) phaseName = 'Third Quarter';
             else if (phase >= 0.77 && phase < 0.98) phaseName = 'Waning Crescent';
 
-            // --- Layout ---
-            ctx.fillStyle = 'black'; // Dark mode background for space!
+            // --- Draw Background (Blueprint Hashlines) ---
+            ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, width, height);
             
+            ctx.strokeStyle = '#ccc'; // Light grey dithers nicely
+            ctx.lineWidth = 2;
+            const gap = 16; // Spacing between hash lines
+            
+            // Draw diagonal lines across the entire canvas
+            for (let i = -height; i < width * 2; i += gap) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i - height, height); // Angled bottom-left
+                ctx.stroke();
+            }
+
             const cx = width / 2;
-            const cy = height / 2 - 20;
-            const radius = 160;
+            const cy = height / 2 - 30; // Shifted up slightly to leave room for text
+            const radius = 150;
 
             // --- Draw the Moon ---
-            // 1. Draw the base white circle (Full Moon)
+            // 1. Draw the base white circle
             ctx.fillStyle = 'white';
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -1715,8 +1725,6 @@ const Plugins = [
             // 2. Overlay the shadow to create the phase
             ctx.fillStyle = 'black';
             ctx.beginPath();
-            
-            // Draw the dark hemisphere
             if (phase < 0.5) {
                 // Waxing: Left half is dark
                 ctx.arc(cx, cy, radius, Math.PI / 2, Math.PI * 1.5);
@@ -1726,35 +1734,41 @@ const Plugins = [
             }
             ctx.fill();
 
-            // 3. Draw the terminator line (the curved ellipse that makes the crescent/gibbous)
-            // The width of the ellipse is based on a cosine curve of the phase
+            // 3. Draw the terminator line (the curved ellipse)
             const terminatorWidth = radius * Math.abs(Math.cos(phase * Math.PI * 2));
             
             ctx.beginPath();
-            // If it's a crescent, the terminator is black. If it's a gibbous, the terminator is white.
             if ((phase > 0 && phase < 0.25) || (phase > 0.75 && phase < 1.0)) {
                 ctx.fillStyle = 'black';
             } else {
                 ctx.fillStyle = 'white';
             }
-            
-            // Draw the vertical ellipse to carve out the phase shape
             ctx.ellipse(cx, cy, terminatorWidth, radius, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // --- Draw the Info Text ---
+            // 4. Draw a thick black border around the whole moon to separate it from hashlines!
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // --- Draw the Info Text Banner ---
+            // Draw a solid black block at the bottom so the text isn't lost in the hashlines
+            ctx.fillStyle = 'black';
+            ctx.fillRect(40, height - 110, width - 80, 90);
+            
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
             
             // Phase Name
-            canvasUtils.fitTextSingleLine(ctx, phaseName.toUpperCase(), cx, height - 70, width - 40, 36, 'bold', 'monospace');
+            canvasUtils.fitTextSingleLine(ctx, phaseName.toUpperCase(), cx, height - 60, width - 100, 36, 'bold', 'monospace');
             
             // Illumination Percentage
-            // Illumination goes 0 -> 100 -> 0 based on a sine curve
             const illumination = (0.5 * (1 - Math.cos(phase * Math.PI * 2)) * 100).toFixed(1);
             
-            ctx.fillStyle = '#aaa'; // Dithers nicely to gray
-            canvasUtils.fitTextSingleLine(ctx, `Illumination: ${illumination}%  |  Age: ${currentAge.toFixed(1)} Days`, cx, height - 30, width - 40, 20, 'normal', 'monospace');
+            ctx.fillStyle = '#ccc'; 
+            canvasUtils.fitTextSingleLine(ctx, `Illumination: ${illumination}%  |  Age: ${currentAge.toFixed(1)} Days`, cx, height - 35, width - 100, 18, 'normal', 'monospace');
             
             ctx.textAlign = 'left'; // Reset
         }
