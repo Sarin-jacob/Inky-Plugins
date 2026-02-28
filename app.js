@@ -1459,6 +1459,305 @@ const Plugins = [
                 if (yPos > height - 20) break;
             }
         }
+    },
+    {
+        id: 'screensaver_10print',
+        theme: 'Screensavers',
+        name: '10 PRINT Geometry',
+        description: 'Classic algorithmic art. Generates a new pattern every refresh.',
+        minInterval: 60,
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'square';
+            
+            const step = 40; // Size of the geometric blocks
+            
+            ctx.beginPath();
+            for (let x = 0; x < width; x += step) {
+                for (let y = 0; y < height; y += step) {
+                    if (Math.random() > 0.5) {
+                        // Draw \
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + step, y + step);
+                    } else {
+                        // Draw /
+                        ctx.moveTo(x + step, y);
+                        ctx.lineTo(x, y + step);
+                    }
+                }
+            }
+            ctx.stroke();
+
+            // Add a slick label in the bottom corner
+            ctx.fillStyle = 'white';
+            ctx.fillRect(width - 150, height - 40, 150, 40);
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 16px monospace';
+            ctx.fillText('SYS.10_PRINT', width - 130, height - 15);
+        }
+    },
+    {
+        id: 'screensaver_hexrain',
+        theme: 'Screensavers',
+        name: 'Hex Data Rain',
+        description: 'A static snapshot of cascading hexadecimal code.',
+        minInterval: 60,
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            // Dark mode background
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, width, height);
+            
+            const fontSize = 18;
+            ctx.font = `bold ${fontSize}px monospace`;
+            ctx.textAlign = 'center';
+
+            const cols = Math.floor(width / fontSize);
+            const rows = Math.floor(height / fontSize);
+
+            // Generate "rain drops" for each column
+            for (let i = 0; i < cols; i++) {
+                // Randomly decide how far down this column the "rain" has fallen
+                const dropLength = Math.floor(Math.random() * rows);
+                const x = i * fontSize + (fontSize / 2);
+
+                for (let j = 0; j < dropLength; j++) {
+                    const y = j * fontSize + fontSize;
+                    
+                    // Generate a random Hex character (0-9, A-F)
+                    const char = Math.floor(Math.random() * 16).toString(16).toUpperCase();
+                    
+                    // The bottom-most character is white (the "head" of the drop)
+                    // The rest fade into gray (which dithers beautifully on e-ink)
+                    if (j === dropLength - 1) {
+                        ctx.fillStyle = 'white';
+                    } else if (j > dropLength - 5) {
+                        ctx.fillStyle = '#ccc'; // Light gray
+                    } else {
+                        ctx.fillStyle = '#555'; // Dark gray tail
+                    }
+                    
+                    // Occasionally blank out characters to create "gaps" in the stream
+                    if (Math.random() > 0.1) {
+                        ctx.fillText(char, x, y);
+                    }
+                }
+            }
+            ctx.textAlign = 'left'; // Reset
+        }
+    },
+    {
+        id: 'screensaver_lissajous',
+        theme: 'Screensavers',
+        name: 'Harmonic Lissajous',
+        description: 'Mathematical curves that slowly evolve over time.',
+        minInterval: 60,
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+
+            // Use the current time to slowly mutate the math parameters
+            const timeOffset = Date.now() / 1000000;
+            const a = 3 + Math.sin(timeOffset); // Frequency X
+            const b = 2 + Math.cos(timeOffset * 0.8); // Frequency Y
+            const delta = timeOffset * 2; // Phase shift
+
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            
+            // Draw a subtle background grid
+            ctx.beginPath();
+            ctx.strokeStyle = '#eee'; // Dithers to very light gray
+            for(let i = 0; i < width; i+= 50) { ctx.moveTo(i, 0); ctx.lineTo(i, height); }
+            for(let i = 0; i < height; i+= 50) { ctx.moveTo(0, i); ctx.lineTo(width, i); }
+            ctx.stroke();
+
+            // Draw the Lissajous Curve
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            for (let t = 0; t <= Math.PI * 100; t += 0.02) {
+                // Parametric equations for x and y
+                const x = (width / 2) + (width / 2.5) * Math.sin(a * t + delta);
+                const y = (height / 2) + (height / 2.5) * Math.sin(b * t);
+                
+                if (t === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Data overlay
+            ctx.fillStyle = 'black';
+            ctx.font = '14px monospace';
+            ctx.fillText(`f(x)=sin(${a.toFixed(2)}t + ${delta.toFixed(2)})`, 20, height - 35);
+            ctx.fillText(`f(y)=sin(${b.toFixed(2)}t)`, 20, height - 15);
+        }
+    },
+    {
+        id: 'wiki_on_this_day',
+        theme: 'Knowledge & Trivia',
+        name: 'On This Day in History',
+        description: 'Historical events that happened on today\'s date.',
+        minInterval: 3600, // 1 hour
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const displayDate = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+            ctx.fillStyle = 'black';
+            canvasUtils.fitTextSingleLine(ctx, `On This Day: ${displayDate}`, 40, 60, width - 80, 40, 'bold');
+            ctx.fillRect(40, 80, width - 80, 4);
+
+            try {
+                // Free Wikipedia REST API
+                const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`;
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const data = await res.json();
+
+                if (!data.events || data.events.length === 0) throw new Error('No events found.');
+
+                // Pick 3 random historical events from the list so it feels fresh
+                const shuffled = data.events.sort(() => 0.5 - Math.random());
+                const selectedEvents = shuffled.slice(0, 3);
+                
+                // Sort them chronologically just for neatness
+                selectedEvents.sort((a, b) => a.year - b.year);
+
+                let yPos = 130;
+                const availableHeight = height - 120;
+                const ySpacing = Math.min(100, availableHeight / 3);
+
+                selectedEvents.forEach((ev) => {
+                    // Draw the Year in a black block for emphasis
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(40, yPos - 30, 90, 40);
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.font = 'bold 24px Arial';
+                    ctx.fillText(ev.year, 85, yPos - 2);
+                    
+                    ctx.textAlign = 'left';
+                    ctx.fillStyle = 'black';
+
+                    // Clean up the Wikipedia text (sometimes it's very long)
+                    let text = ev.text;
+                    if (text.length > 200) text = text.substring(0, 197) + '...';
+
+                    // Wrap the historical text beautifully next to the year block
+                    const textX = 150;
+                    const textWidth = width - textX - 40;
+                    
+                    canvasUtils.fitTextMultiLine(ctx, text, textX, yPos - 25, textWidth, ySpacing - 10, 24, 'normal', 'Arial', 1.3);
+                    
+                    yPos += ySpacing;
+                });
+
+            } catch (err) {
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, 'Error fetching Wikipedia history.', 40, 150, width - 80, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'lunar_phase',
+        theme: 'Science & Discovery',
+        name: 'Procedural Lunar Phase',
+        description: 'Mathematically calculates and draws the current moon phase.',
+        minInterval: 3600, // 1 hour
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            // --- Astronomical Math ---
+            // Calculate moon age based on known new moon (Jan 6, 2000 18:14 UTC)
+            const synodicMonth = 29.53058867;
+            const newMoon2000 = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)).getTime();
+            const now = Date.now();
+            const daysSinceNew = (now - newMoon2000) / (1000 * 60 * 60 * 24);
+            const currentAge = daysSinceNew % synodicMonth;
+            
+            // Phase goes from 0.0 (New) to 0.5 (Full) to 1.0 (New)
+            const phase = currentAge / synodicMonth; 
+            
+            let phaseName = 'New Moon';
+            if (phase > 0.02 && phase < 0.23) phaseName = 'Waxing Crescent';
+            else if (phase >= 0.23 && phase < 0.27) phaseName = 'First Quarter';
+            else if (phase >= 0.27 && phase < 0.48) phaseName = 'Waxing Gibbous';
+            else if (phase >= 0.48 && phase < 0.52) phaseName = 'Full Moon';
+            else if (phase >= 0.52 && phase < 0.73) phaseName = 'Waning Gibbous';
+            else if (phase >= 0.73 && phase < 0.77) phaseName = 'Third Quarter';
+            else if (phase >= 0.77 && phase < 0.98) phaseName = 'Waning Crescent';
+
+            // --- Layout ---
+            ctx.fillStyle = 'black'; // Dark mode background for space!
+            ctx.fillRect(0, 0, width, height);
+            
+            const cx = width / 2;
+            const cy = height / 2 - 20;
+            const radius = 160;
+
+            // --- Draw the Moon ---
+            // 1. Draw the base white circle (Full Moon)
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Overlay the shadow to create the phase
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            
+            // Draw the dark hemisphere
+            if (phase < 0.5) {
+                // Waxing: Left half is dark
+                ctx.arc(cx, cy, radius, Math.PI / 2, Math.PI * 1.5);
+            } else {
+                // Waning: Right half is dark
+                ctx.arc(cx, cy, radius, Math.PI * 1.5, Math.PI / 2);
+            }
+            ctx.fill();
+
+            // 3. Draw the terminator line (the curved ellipse that makes the crescent/gibbous)
+            // The width of the ellipse is based on a cosine curve of the phase
+            const terminatorWidth = radius * Math.abs(Math.cos(phase * Math.PI * 2));
+            
+            ctx.beginPath();
+            // If it's a crescent, the terminator is black. If it's a gibbous, the terminator is white.
+            if ((phase > 0 && phase < 0.25) || (phase > 0.75 && phase < 1.0)) {
+                ctx.fillStyle = 'black';
+            } else {
+                ctx.fillStyle = 'white';
+            }
+            
+            // Draw the vertical ellipse to carve out the phase shape
+            ctx.ellipse(cx, cy, terminatorWidth, radius, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // --- Draw the Info Text ---
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            
+            // Phase Name
+            canvasUtils.fitTextSingleLine(ctx, phaseName.toUpperCase(), cx, height - 70, width - 40, 36, 'bold', 'monospace');
+            
+            // Illumination Percentage
+            // Illumination goes 0 -> 100 -> 0 based on a sine curve
+            const illumination = (0.5 * (1 - Math.cos(phase * Math.PI * 2)) * 100).toFixed(1);
+            
+            ctx.fillStyle = '#aaa'; // Dithers nicely to gray
+            canvasUtils.fitTextSingleLine(ctx, `Illumination: ${illumination}%  |  Age: ${currentAge.toFixed(1)} Days`, cx, height - 30, width - 40, 20, 'normal', 'monospace');
+            
+            ctx.textAlign = 'left'; // Reset
+        }
     }
 ];
 
