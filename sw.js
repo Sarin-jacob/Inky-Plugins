@@ -4,7 +4,7 @@ const ASSETS_TO_CACHE = [
     './index.html',
     './app.js',
     './manifest.json',
-    './icon.svg'
+    './logo.svg'
 ];
 
 // Install the service worker and cache the core assets
