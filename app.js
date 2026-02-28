@@ -228,7 +228,7 @@ const Plugins = [
         description: 'Needs OpenWeather API key and City Name.',
         minInterval: 3600,
         requiredKeys: [
-            { id: 'openweather_key', type: 'password', label: 'OpenWeather API Key' },
+            { id: 'openweather_key', type: 'password', label: 'OpenWeather API Key', required:true },
             { id: 'city_name', type: 'text', label: 'City Name', placeholder: 'e.g., Khordha, IN' }
         ],
         render: async (ctx, width, height, apiKeys) => {
@@ -275,7 +275,7 @@ const Plugins = [
         description: 'Shows latest commits for a specific repo.',
         minInterval: 300,
         requiredKeys: [
-            { id: 'github_repo', type: 'text', label: 'Target Repo (user/repo)', placeholder: 'e.g., Sarin-jacob/Inky' },
+            { id: 'github_repo', type: 'text', label: 'Target Repo (user/repo)', placeholder: 'e.g., Sarin-jacob/Inky', required: true },
             { id: 'commit_count', type: 'number', label: 'Number of Commits', placeholder: 'e.g., 4' }
         ],
         render: async (ctx, width, height, apiKeys) => {
@@ -373,7 +373,7 @@ const Plugins = [
         theme: 'Fun & Aesthetic',
         name: 'Conway\'s Game of Life',
         description: 'Zero-player cellular automaton. Evolves every update.',
-        minInterval: 5, // Faster updates look cool for automata
+        // minInterval: 5, // Faster updates look cool for automata
         requiredKeys: [], 
         grid: null, // We store the state right here in the plugin object
         cols: 50, // 800px / 16px
@@ -443,7 +443,7 @@ const Plugins = [
         description: 'Displays current match. Needs free key from cricketdata.org.',
         minInterval: 60,
         requiredKeys: [
-            { id: 'cricketdata_key', type: 'password', label: 'CricketData.org API Key' }
+            { id: 'cricketdata_key', type: 'password', label: 'CricketData.org API Key', required: true }
         ],
         render: async (ctx, width, height, apiKeys) => {
             const key = apiKeys['cricketdata_key'];
@@ -737,7 +737,7 @@ const Plugins = [
         description: 'Pulls your top tasks directly from Todoist.',
         minInterval: 300, // 5 minutes
         requiredKeys: [
-            { id: 'todoist_token', type: 'password', label: 'Todoist API Token (Bearer)' }
+            { id: 'todoist_token', type: 'password', label: 'Todoist API Token (Bearer)', required: true }
         ],
         render: async (ctx, width, height, apiKeys) => {
             const token = apiKeys['todoist_token'];
@@ -920,7 +920,7 @@ const Plugins = [
         description: 'Profile stats, active repos, and the 52-week contribution map.',
         minInterval: 3600, // 1 hour
         requiredKeys: [
-            { id: 'github_username', type: 'text', label: 'GitHub Username', placeholder: 'Sarin-jacob' },
+            { id: 'github_username', type: 'text', label: 'GitHub Username', placeholder: 'Sarin-jacob', required: true },
             { id: 'github_pat', type: 'password', label: 'Personal Access Token (Optional)', placeholder: 'ghp_xxxxxxxxxxxx' }
         ],
         render: async (ctx, width, height, apiKeys) => {
@@ -1085,6 +1085,279 @@ const Plugins = [
             }
         }
     },
+    {
+        id: 'chess_daily',
+        theme: 'Puzzles & Games',
+        name: 'Daily Chess Puzzle',
+        description: 'Draws the Chess.com daily puzzle directly to the screen.',
+        minInterval: 43200, // 12 hours (Updates once a day)
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            try {
+                // Chess.com has a great, free API for the daily puzzle
+                const res = await fetch('https://api.chess.com/pub/puzzle');
+                const data = await res.json();
+                
+                // Extract the board layout (FEN string) and whose turn it is
+                const fenParts = data.fen.split(' ');
+                const boardFen = fenParts[0];
+                const turn = fenParts[1] === 'w' ? 'White to move' : 'Black to move';
+
+                // --- Layout Settings ---
+                const boardSize = 400;
+                const squareSize = boardSize / 8;
+                const startX = 40;
+                const startY = 40;
+
+                // --- Draw the Board ---
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(startX, startY, boardSize, boardSize);
+
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        // Alternate square colors (White and Dithered Gray)
+                        const isLight = (row + col) % 2 === 0;
+                        ctx.fillStyle = isLight ? 'white' : '#ccc';
+                        ctx.fillRect(startX + (col * squareSize), startY + (row * squareSize), squareSize, squareSize);
+                    }
+                }
+
+                // --- Parse FEN and Draw Pieces ---
+                // Unicode chess pieces map
+                const pieces = {
+                    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙', // White
+                    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'  // Black
+                };
+
+                const rows = boardFen.split('/');
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Use standard fonts that have good unicode support
+                ctx.font = `${squareSize * 0.8}px Arial, "Segoe UI Symbol"`; 
+
+                rows.forEach((rowString, rowIndex) => {
+                    let colIndex = 0;
+                    for (let char of rowString) {
+                        if (!isNaN(char)) {
+                            // If it's a number, skip that many empty squares
+                            colIndex += parseInt(char);
+                        } else {
+                            // If it's a letter, draw the piece
+                            ctx.fillStyle = 'black';
+                            const px = startX + (colIndex * squareSize) + (squareSize / 2);
+                            const py = startY + (rowIndex * squareSize) + (squareSize / 2);
+                            ctx.fillText(pieces[char], px, py + 4); // +4 is a slight optical adjustment
+                            colIndex++;
+                        }
+                    }
+                });
+
+                // Reset canvas defaults
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+
+                // --- Draw Text Information ---
+                const textStartX = startX + boardSize + 40;
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, 'Daily Chess Puzzle', textStartX, 100, width - textStartX - 20, 40, 'bold');
+                
+                ctx.fillStyle = '#555';
+                canvasUtils.fitTextSingleLine(ctx, data.title, textStartX, 140, width - textStartX - 20, 24, 'italic');
+                
+                ctx.fillRect(textStartX, 160, width - textStartX - 40, 2);
+                
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, turn.toUpperCase(), textStartX, 220, width - textStartX - 20, 35, 'bold', 'monospace');
+
+            } catch (err) {
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, 'Error loading chess puzzle.', 40, 100, width - 80, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'sudoku_daily',
+        theme: 'Puzzles & Games',
+        name: 'Daily Sudoku',
+        description: 'Generates a random playable Sudoku grid.',
+        minInterval: 3600, // 1 hour
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            try {
+                // Free Sudoku API
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent('https://sudoku-api.vercel.app/api/dosuku')}`);
+                const data = await res.json();
+                
+                const grid = data.newboard.grids[0].value;
+                const difficulty = data.newboard.grids[0].difficulty;
+
+                // --- Layout Settings ---
+                const boardSize = 420; // Must be divisible by 9
+                const cellSize = boardSize / 9;
+                const startX = 40;
+                const startY = 30;
+
+                // --- Draw the Grid Cells ---
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 28px monospace';
+
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        const x = startX + (c * cellSize);
+                        const y = startY + (r * cellSize);
+                        
+                        // Draw thin cell borders
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = '#999';
+                        ctx.strokeRect(x, y, cellSize, cellSize);
+
+                        // Draw Numbers (0 means empty square)
+                        if (grid[r][c] !== 0) {
+                            ctx.fillText(grid[r][c], x + (cellSize / 2), y + (cellSize / 2) + 2);
+                        }
+                    }
+                }
+
+                // --- Draw the Thick 3x3 Block Borders ---
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'black';
+                ctx.strokeRect(startX, startY, boardSize, boardSize);
+                
+                for (let i = 1; i < 3; i++) {
+                    // Vertical thick lines
+                    ctx.beginPath();
+                    ctx.moveTo(startX + (i * 3 * cellSize), startY);
+                    ctx.lineTo(startX + (i * 3 * cellSize), startY + boardSize);
+                    ctx.stroke();
+                    
+                    // Horizontal thick lines
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY + (i * 3 * cellSize));
+                    ctx.lineTo(startX + boardSize, startY + (i * 3 * cellSize));
+                    ctx.stroke();
+                }
+
+                // Reset canvas defaults
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+
+                // --- Draw Text Info ---
+                const textStartX = startX + boardSize + 40;
+                canvasUtils.fitTextSingleLine(ctx, 'SUDOKU', textStartX, 100, width - textStartX - 20, 50, 'bold', 'monospace');
+                
+                ctx.fillStyle = '#555';
+                canvasUtils.fitTextSingleLine(ctx, `Difficulty: ${difficulty}`, textStartX, 150, width - textStartX - 20, 24, 'normal');
+
+            } catch (err) {
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, 'Error loading Sudoku data.', 40, 100, width - 80, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'maze_generator',
+        theme: 'Puzzles & Games',
+        name: 'Random Maze Generator',
+        description: 'Algorithmic DFS maze generation. Solvable every time.',
+        minInterval: 60, // Updates as fast as every minute
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+
+            // --- Maze Settings ---
+            const cols = 40;
+            const rows = 24;
+            const cellSize = 18; // 40*18 = 720 width, 24*18 = 432 height
+            const startX = (width - (cols * cellSize)) / 2;
+            const startY = (height - (rows * cellSize)) / 2;
+
+            // Initialize Grid (each cell has 4 walls: top, right, bottom, left)
+            let grid = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    grid.push({ r, c, walls: [true, true, true, true], visited: false });
+                }
+            }
+
+            const index = (r, c) => (r < 0 || c < 0 || r > rows - 1 || c > cols - 1) ? -1 : c + r * cols;
+
+            // --- Depth-First Search Maze Generation ---
+            let current = grid[0];
+            current.visited = true;
+            let stack = [];
+
+            while (true) {
+                // Find unvisited neighbors
+                let neighbors = [];
+                let top    = grid[index(current.r - 1, current.c)];
+                let right  = grid[index(current.r, current.c + 1)];
+                let bottom = grid[index(current.r + 1, current.c)];
+                let left   = grid[index(current.r, current.c - 1)];
+
+                if (top && !top.visited) neighbors.push({cell: top, wallC: 0, wallN: 2});
+                if (right && !right.visited) neighbors.push({cell: right, wallC: 1, wallN: 3});
+                if (bottom && !bottom.visited) neighbors.push({cell: bottom, wallC: 2, wallN: 0});
+                if (left && !left.visited) neighbors.push({cell: left, wallC: 3, wallN: 1});
+
+                if (neighbors.length > 0) {
+                    // Choose random neighbor
+                    let next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    stack.push(current);
+                    
+                    // Remove walls between them
+                    current.walls[next.wallC] = false;
+                    next.cell.walls[next.wallN] = false;
+                    
+                    current = next.cell;
+                    current.visited = true;
+                } else if (stack.length > 0) {
+                    current = stack.pop();
+                } else {
+                    break; // Maze complete
+                }
+            }
+
+            // Create Entry and Exit
+            grid[0].walls[3] = false; // Top-Left entry
+            grid[grid.length - 1].walls[1] = false; // Bottom-Right exit
+
+            // --- Draw the Maze ---
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'square';
+
+            for (let i = 0; i < grid.length; i++) {
+                let cell = grid[i];
+                let x = startX + (cell.c * cellSize);
+                let y = startY + (cell.r * cellSize);
+
+                ctx.beginPath();
+                if (cell.walls[0]) { ctx.moveTo(x, y); ctx.lineTo(x + cellSize, y); } // Top
+                if (cell.walls[1]) { ctx.moveTo(x + cellSize, y); ctx.lineTo(x + cellSize, y + cellSize); } // Right
+                if (cell.walls[2]) { ctx.moveTo(x + cellSize, y + cellSize); ctx.lineTo(x, y + cellSize); } // Bottom
+                if (cell.walls[3]) { ctx.moveTo(x, y + cellSize); ctx.lineTo(x, y); } // Left
+                ctx.stroke();
+            }
+
+            // Add little "Start" and "End" text
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('IN', startX - 20, startY + 14);
+            ctx.fillText('OUT', startX + (cols * cellSize) + 4, startY + (rows * cellSize) - 4);
+        }
+    }
 ];
 
 // --- Core Functions ---
@@ -1250,9 +1523,11 @@ function buildApiKeyInputs() {
         } else { 
             inputHtml = `<input type="text" data-key="${keyDef.id}" class="apikey-input dark:text-gray-50 dark:bg-gray-800 w-full border p-2 rounded text-sm focus:ring-black focus:border-black" placeholder="${keyDef.placeholder || ''}" value="${savedValue}">`;
         }
-        
+        const requiredBadge = keyDef.required ? 
+            '<span class="text-red-500">*</span>' : 
+            '<span class="text-gray-400 font-normal text-xs ml-1">(Optional)</span>';
         wrapper.innerHTML = `
-            <label class="block text-sm font-medium mb-1 mt-3 dark:text-gray-50 text-gray-700">${keyDef.label || keyDef.id}</label>
+            <label class="block text-sm font-medium mb-1 mt-3 dark:text-gray-50 text-gray-700">${keyDef.label || keyDef.id} ${requiredBadge}</label>
             ${inputHtml}
         `;
         container.appendChild(wrapper);
@@ -1308,6 +1583,9 @@ async function renderActivePlugin() {
     
     // Check missing keys using the new object structure (keyDef.id)
     const missingKeys = plugin.requiredKeys.filter(keyDef => {
+        // If the key doesn't explicitly have `required: true`, ignore it.
+        if (keyDef.required !== true) return false;
+        
         const val = config.apiKeys[keyDef.id];
         return val === undefined || val.trim() === '';
     });
