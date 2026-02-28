@@ -921,17 +921,17 @@ const Plugins = [
         minInterval: 3600, // 1 hour
         requiredKeys: [
             { id: 'github_username', type: 'text', label: 'GitHub Username', placeholder: 'Sarin-jacob' },
-            { id: 'github_pat', type: 'password', label: 'Personal Access Token (Optional, to show private commits)', placeholder: 'ghp_xxxxxxxxxxxx' }
+            { id: 'github_pat', type: 'password', label: 'Personal Access Token (Optional)', placeholder: 'ghp_xxxxxxxxxxxx' }
         ],
         render: async (ctx, width, height, apiKeys) => {
             const username = apiKeys['github_username'] || 'Sarin-jacob';
             const pat = apiKeys['github_pat'];
             
+            // Fill entire canvas white initially
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, width, height);
             
             try {
-                // Setup auth headers if a PAT was provided
                 const headers = {};
                 if (pat) headers['Authorization'] = `Bearer ${pat}`;
 
@@ -940,39 +940,41 @@ const Plugins = [
                 if (!userRes.ok) throw new Error('User not found');
                 const user = await userRes.json();
 
-                // 2. Fetch Repos to calculate Latest and Most Worked
-                // sort=updated ensures the first result is the latest active.
+                // 2. Fetch Repos for "Latest Active"
                 const reposRes = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`, { headers });
-                const repos = await reposRes.json();
+                const repos = reposRes.ok ? await reposRes.json() : [];
                 
-                let latestRepo = 'None';
+                let latestRepo = repos.length > 0 ? repos[0].name : 'None';
                 let topRepo = 'None';
-                
-                if (repos && repos.length > 0) {
-                    latestRepo = repos[0].name;
-                    // Find the repo with the largest size as a proxy for "most worked on / largest codebase"
+                let topRepoCommits = 0;
+
+                // Fallback: If no PAT, use repo size
+                if (repos.length > 0 && !pat) {
                     const biggest = repos.reduce((prev, current) => (prev.size > current.size) ? prev : current);
                     topRepo = biggest.name;
                 }
 
-                // 3. Fetch Contributions
+                // 3. Fetch Contributions & Accurate Commit Stats
                 let levels = [];
                 if (pat) {
-                    // Use GitHub's GraphQL API for private/authenticated commits
+                    // GraphQL gets both the grid AND the most worked repo by actual commits
                     const query = `
                     query {
                       user(login: "${username}") {
                         contributionsCollection {
+                          commitContributionsByRepository(maxRepositories: 1) {
+                            repository { name }
+                            contributions { totalCount }
+                          }
                           contributionCalendar {
                             weeks {
-                              contributionDays {
-                                contributionLevel
-                              }
+                              contributionDays { contributionLevel }
                             }
                           }
                         }
                       }
                     }`;
+                    
                     const gqlRes = await fetch('https://api.github.com/graphql', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${pat}`, 'Content-Type': 'application/json' },
@@ -981,11 +983,17 @@ const Plugins = [
                     const gqlData = await gqlRes.json();
                     if (gqlData.errors) throw new Error(gqlData.errors[0].message);
                     
-                    const weeks = gqlData.data.user.contributionsCollection.contributionCalendar.weeks;
+                    const collection = gqlData.data.user.contributionsCollection;
+                    
+                    // Extract exact top repo by commits
+                    if (collection.commitContributionsByRepository.length > 0) {
+                        topRepo = collection.commitContributionsByRepository[0].repository.name;
+                        topRepoCommits = collection.commitContributionsByRepository[0].contributions.totalCount;
+                    }
+                    
                     // Map GraphQL text levels to 0-4 numbers
                     const levelMap = { 'NONE': 0, 'FIRST_QUARTILE': 1, 'SECOND_QUARTILE': 2, 'THIRD_QUARTILE': 3, 'FOURTH_QUARTILE': 4 };
-                    
-                    weeks.forEach(week => {
+                    collection.contributionCalendar.weeks.forEach(week => {
                         week.contributionDays.forEach(day => {
                             levels.push(levelMap[day.contributionLevel] || 0);
                         });
@@ -1004,32 +1012,40 @@ const Plugins = [
 
                 // --- Drawing the Layout ---
 
+                // 1. Black Header Block (White on Black)
                 ctx.fillStyle = 'black';
-                canvasUtils.fitTextSingleLine(ctx, (user.name || user.login).toUpperCase(), 40, 60, width - 80, 50, 'bold');
+                ctx.fillRect(0, 0, width, 140);
                 
-                ctx.fillStyle = '#555';
-                canvasUtils.fitTextSingleLine(ctx, `@${user.login}  |  Followers: ${user.followers}  |  Repos: ${user.public_repos}`, 40, 100, width - 80, 24, 'bold', 'monospace');
+                // Name
+                ctx.fillStyle = 'white';
+                canvasUtils.fitTextSingleLine(ctx, (user.name || user.login).toUpperCase(), 40, 60, width - 80, 45, 'bold');
                 
-                // Draw Repo Stats Divider
-                ctx.fillStyle = 'black';
-                ctx.fillRect(40, 130, width - 80, 2);
+                // Stats Handle
+                ctx.fillStyle = '#ccc'; // Light gray looks great on black
+                canvasUtils.fitTextSingleLine(ctx, `@${user.login}  |  Followers: ${user.followers}  |  Repos: ${user.public_repos}`, 40, 110, width - 80, 24, 'bold', 'monospace');
                 
-                // Draw Active & Top Repos
+                // 2. Repo Stats Section (Black on White)
                 ctx.fillStyle = '#333';
-                canvasUtils.fitTextSingleLine(ctx, `Latest Active: ${latestRepo}`, 40, 170, width / 2 - 50, 22, 'bold', 'monospace');
-                canvasUtils.fitTextSingleLine(ctx, `Most Worked: ${topRepo}`, width / 2 + 10, 170, width / 2 - 50, 22, 'bold', 'monospace');
+                canvasUtils.fitTextSingleLine(ctx, `Latest Active: ${latestRepo}`, 40, 180, width / 2 - 50, 22, 'bold', 'monospace');
                 
+                // Show actual commit count if PAT was used, otherwise show size warning
+                const topRepoText = (pat && topRepoCommits > 0) 
+                    ? `Top Repo: ${topRepo} (${topRepoCommits} commits)`
+                    : `Largest Repo: ${topRepo}`;
+                canvasUtils.fitTextSingleLine(ctx, topRepoText, width / 2 + 10, 180, width / 2 - 50, 22, 'bold', 'monospace');
+                
+                // Divider Line
                 ctx.fillStyle = 'black';
-                ctx.fillRect(40, 195, width - 80, 2);
+                ctx.fillRect(40, 220, width - 80, 2);
 
                 // --- Drawing the Contribution Graph ---
                 const boxSize = 10;
-                const gap = 3; // Reduced gap slightly to ensure 52 weeks fits perfectly in 800px width
+                const gap = 3;
                 const startX = 40;
-                const startY = 280;
+                const startY = 300;
                 
                 ctx.fillStyle = 'black';
-                canvasUtils.fitTextSingleLine(ctx, `Last 365 Days of Code ${pat ? '(Including Private)' : ''}`, startX, startY - 20, width - 80, 24, 'bold');
+                canvasUtils.fitTextSingleLine(ctx, `Last 365 Days of Code ${pat ? '(Authenticated)' : '(Public Only)'}`, startX, startY - 20, width - 80, 24, 'bold');
                 
                 // Draw Day Labels
                 ctx.font = '14px monospace';
@@ -1038,12 +1054,10 @@ const Plugins = [
                 ctx.fillText('Wed', startX, startY + (boxSize+gap)*3 + 10);
                 ctx.fillText('Fri', startX, startY + (boxSize+gap)*5 + 10);
 
-                // Shift the actual graph right to make room for the Mon/Wed/Fri labels
                 const graphStartX = startX + 40;
 
                 for (let i = 0; i < levels.length; i++) {
                     const level = levels[i];
-                    // GitHub maps are 7 rows tall (Sun to Sat)
                     const row = i % 7; 
                     const col = Math.floor(i / 7);
                     
@@ -1054,20 +1068,19 @@ const Plugins = [
                     ctx.strokeStyle = 'black';
                     ctx.lineWidth = 1;
                     
-                    // B&W "Grass" Rendering Logic
                     if (level === 0) {
                         ctx.strokeRect(x, y, boxSize, boxSize); // Empty outline
                     } else if (level === 1 || level === 2) {
                         ctx.strokeRect(x, y, boxSize, boxSize); 
-                        ctx.fillRect(x + 2, y + 2, boxSize - 4, boxSize - 4); // Medium dot inside
+                        ctx.fillRect(x + 2, y + 2, boxSize - 4, boxSize - 4); // Medium dot
                     } else {
-                        ctx.fillRect(x, y, boxSize, boxSize); // Solid black block for heavy days
+                        ctx.fillRect(x, y, boxSize, boxSize); // Solid block
                     }
                 }
 
             } catch (err) {
                 ctx.fillStyle = 'black';
-                canvasUtils.fitTextSingleLine(ctx, `Error fetching profile or graph. Check API limits or Token.`, 30, 150, width - 60, 30);
+                canvasUtils.fitTextSingleLine(ctx, `Error fetching profile. Check API limits or Token.`, 30, 150, width - 60, 30);
                 console.error(err);
             }
         }
