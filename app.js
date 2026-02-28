@@ -1,4 +1,4 @@
-const CORS_PROXY = 'https://api.codetabs.com/v1/proxy/?';
+const CORS_PROXY = 'https://api.codetabs.com/v1/proxy/?quest=';
 
 // --- Core State & Configuration ---
 let config = {
