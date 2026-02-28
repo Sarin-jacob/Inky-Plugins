@@ -119,7 +119,7 @@ const canvasUtils = {
 const Plugins = [
     {
         id: 'hello_world',
-        name: 'Basic: Hello Inky',
+        name: 'Hello Inky',
         minInterval : 10,
         description: 'A simple text display to test connection.',
         requiredKeys: [], // No API keys needed
@@ -184,7 +184,8 @@ const Plugins = [
     },
     {
         id: 'hn_top',
-        name: 'Tech: Hacker News Top',
+        name: 'Hacker News Top',
+        theme: 'Tech & Dev',
         description: 'Fetches the top 4 stories from Y Combinator.',
         minInterval: 300,
         requiredKeys: [], 
@@ -594,7 +595,430 @@ const Plugins = [
                 console.error(err);
             }
         }
-    }
+    },
+    {
+        id: 'pomodoro_timer',
+        theme: 'Productivity',
+        name: 'Pomodoro Tracker',
+        description: 'Deep work timer. Auto-switches between Work and Break.',
+        minInterval: 60, // Updates once a minute
+        requiredKeys: [
+            { id: 'work_mins', type: 'number', label: 'Work Focus (Minutes)', placeholder: '25' },
+            { id: 'break_mins', type: 'number', label: 'Break (Minutes)', placeholder: '5' }
+        ],
+        // Internal state to track the timer across refresh cycles
+        state: { endTime: 0, mode: 'Idle', totalMins: 0 },
+        render: async function(ctx, width, height, apiKeys) {
+            const workMins = parseInt(apiKeys['work_mins']) || 25;
+            const breakMins = parseInt(apiKeys['break_mins']) || 5;
+            const now = Date.now();
+
+            // Initialize or switch modes if time is up
+            if (this.state.mode === 'Idle' || now >= this.state.endTime) {
+                this.state.mode = this.state.mode === 'Work' ? 'Break' : 'Work';
+                this.state.totalMins = this.state.mode === 'Work' ? workMins : breakMins;
+                this.state.endTime = now + (this.state.totalMins * 60 * 1000);
+            }
+
+            const remainingMs = this.state.endTime - now;
+            const remainingMins = Math.ceil(remainingMs / 60000);
+            
+            // Calculate progress for the bar (0.0 to 1.0)
+            const progress = 1 - (remainingMins / this.state.totalMins);
+
+            // Draw Background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Mode Header
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            canvasUtils.fitTextSingleLine(ctx, `${this.state.mode} Session`, width / 2, 100, width - 40, 60, 'bold');
+            
+            // Draw Giant Remaining Minutes
+            canvasUtils.fitTextSingleLine(ctx, `${remainingMins} MIN`, width / 2, 280, width - 40, 160, 'bold');
+            
+            // Reset text align
+            ctx.textAlign = 'left';
+
+            // Draw Progress Bar outline
+            const barX = 50;
+            const barY = 380;
+            const barW = width - 100;
+            const barH = 40;
+            
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'black';
+            ctx.strokeRect(barX, barY, barW, barH);
+            
+            // Fill Progress Bar
+            ctx.fillStyle = 'black';
+            ctx.fillRect(barX + 4, barY + 4, (barW - 8) * progress, barH - 8);
+        }
+    },
+    {
+        id: 'desk_clock',
+        theme: 'Daily Utility',
+        name: 'Minimalist Desk Clock',
+        description: 'A massive, easy-to-read digital clock and date.',
+        minInterval: 60, // Updates every minute
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            const now = new Date();
+            
+            // Format Time (e.g., "10:15 AM")
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit', 
+                hour12: true 
+            });
+            
+            // Format Date (e.g., "Saturday, February 28")
+            const dateString = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            
+            // Giant Time
+            canvasUtils.fitTextSingleLine(ctx, timeString, width / 2, 240, width - 40, 180, 'bold');
+            
+            // Subtitle Date
+            ctx.fillStyle = '#333';
+            canvasUtils.fitTextSingleLine(ctx, dateString, width / 2, 340, width - 40, 50, 'normal');
+            
+            ctx.textAlign = 'left'; // Reset
+        }
+    },
+    {
+        id: 'ml_glossary',
+        theme: 'AI & Research',
+        name: 'ML Glossary',
+        description: 'Cycles through Machine Learning terminology.',
+        minInterval: 3600, // Update once an hour
+        requiredKeys: [],
+        render: async (ctx, width, height, apiKeys) => {
+            const terms = [
+                { term: "Overfitting", def: "When a model learns the training data too well, including the noise, resulting in poor performance on unseen data." },
+                { term: "Gradient Descent", def: "An optimization algorithm used to minimize the loss function by iteratively moving in the direction of steepest descent." },
+                { term: "Epoch", def: "One complete pass of the training dataset through the machine learning algorithm." },
+                { term: "Zero-Shot Learning", def: "A model's ability to recognize or categorize objects/concepts it has never seen during training, usually using semantic representations." },
+                { term: "Hyperparameter", def: "A parameter whose value is set before the learning process begins, like learning rate or batch size (unlike weights which are derived)." }
+            ];
+            
+            const item = terms[Math.floor(Math.random() * terms.length)];
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Header
+            ctx.fillStyle = 'black';
+            canvasUtils.fitTextSingleLine(ctx, 'ML Term of the Day', 40, 60, width - 80, 35, 'bold');
+            ctx.fillRect(40, 80, width - 80, 4);
+            
+            // The Term
+            canvasUtils.fitTextSingleLine(ctx, item.term, 40, 180, width - 80, 70, 'bold');
+            
+            // The Definition (using the multi-line utility so it wraps nicely!)
+            ctx.fillStyle = '#333';
+            canvasUtils.fitTextMultiLine(ctx, item.def, 40, 240, width - 80, 200, 40, 'normal');
+        }
+    },
+    {
+        id: 'todoist_tasks',
+        theme: 'Productivity',
+        name: 'Todoist Active Tasks',
+        description: 'Pulls your top tasks directly from Todoist.',
+        minInterval: 300, // 5 minutes
+        requiredKeys: [
+            { id: 'todoist_token', type: 'password', label: 'Todoist API Token (Bearer)' }
+        ],
+        render: async (ctx, width, height, apiKeys) => {
+            const token = apiKeys['todoist_token'];
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'black';
+            
+            canvasUtils.fitTextSingleLine(ctx, 'Today\'s Focus', 30, 60, width - 60, 40, 'bold');
+            ctx.fillRect(30, 80, width - 60, 4);
+
+            try {
+                // Todoist API wrapped in our proxy
+                const url = 'https://api.todoist.com/api/v1/tasks?filter=today|overdue';
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!res.ok) throw new Error('Failed to fetch tasks');
+                const tasks = await res.json();
+
+                if (tasks.length === 0) {
+                    canvasUtils.fitTextSingleLine(ctx, 'Inbox Zero! No tasks for today.', 30, 150, width - 60, 35, 'italic');
+                    return;
+                }
+
+                // Show up to 5 tasks to ensure they fit nicely
+                const displayTasks = tasks.slice(0, 5);
+                const ySpacing = Math.min(75, (height - 120) / displayTasks.length);
+                let yPos = 130;
+
+                displayTasks.forEach((task, index) => {
+                    // Draw a little checkbox square
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = 'black';
+                    ctx.strokeRect(30, yPos - 25, 25, 25);
+                    
+                    // High priority tasks get a bold font
+                    const isHighPriority = task.priority > 2;
+                    const weight = isHighPriority ? 'bold' : 'normal';
+                    
+                    ctx.fillStyle = 'black';
+                    canvasUtils.fitTextSingleLine(ctx, task.content, 70, yPos, width - 100, 28, weight);
+                    
+                    yPos += ySpacing;
+                });
+
+            } catch (err) {
+                canvasUtils.fitTextSingleLine(ctx, 'Error fetching Todoist. Check your API Token.', 30, 150, width - 60, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'crypto_ticker',
+        theme: 'Daily Utility',
+        name: 'Crypto Price Ticker',
+        description: 'Live prices and 24h change for any crypto.',
+        minInterval: 120, // 2 minutes
+        requiredKeys: [
+            { id: 'coin_id', type: 'text', label: 'Coin ID', placeholder: 'e.g., bitcoin, ethereum, solana' }
+        ],
+        render: async (ctx, width, height, apiKeys) => {
+            const coinId = (apiKeys['coin_id'] || 'bitcoin').toLowerCase();
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            try {
+                const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`;
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const data = await res.json();
+                
+                if (!data[coinId]) throw new Error('Coin not found');
+
+                const price = data[coinId].usd.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                const change = data[coinId].usd_24h_change;
+                const changeStr = `${change > 0 ? '+' : ''}${change.toFixed(2)}%`;
+
+                // Draw Coin Name
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                canvasUtils.fitTextSingleLine(ctx, coinId.toUpperCase(), width / 2, 120, width - 40, 60, 'bold');
+                
+                // Draw Giant Price
+                canvasUtils.fitTextSingleLine(ctx, price, width / 2, 260, width - 40, 120, 'bold');
+                
+                // Draw 24h Change below it
+                // If it's positive, we use an upward arrow. If negative, downward.
+                const arrow = change > 0 ? '▲' : '▼';
+                
+                // On a B&W e-ink display, we just use text styling instead of green/red colors
+                ctx.fillStyle = '#333';
+                canvasUtils.fitTextSingleLine(ctx, `24h Change: ${arrow} ${changeStr}`, width / 2, 360, width - 40, 40, 'normal');
+                
+                ctx.textAlign = 'left'; // Reset
+
+            } catch (err) {
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'left';
+                canvasUtils.fitTextSingleLine(ctx, `Error: Could not fetch data for '${coinId}'`, 30, 150, width - 60, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'rss_reader',
+        theme: 'News & Feeds',
+        name: 'Universal RSS Reader',
+        description: 'Pulls the latest posts from any RSS/Atom feed.',
+        minInterval: 3600, // 1 hour
+        requiredKeys: [
+            { id: 'rss_url', type: 'text', label: 'RSS Feed URL', placeholder: 'https://bair.berkeley.edu/blog/feed.xml' },
+            { id: 'feed_title', type: 'text', label: 'Custom Title', placeholder: 'Berkeley AI Research' }
+        ],
+        render: async (ctx, width, height, apiKeys) => {
+            const feedUrl = apiKeys['rss_url'] || 'https://bair.berkeley.edu/blog/feed.xml';
+            const title = apiKeys['feed_title'] || 'Latest Posts';
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'black';
+            
+            canvasUtils.fitTextSingleLine(ctx, title, 30, 60, width - 60, 40, 'bold');
+            ctx.fillRect(30, 80, width - 60, 4);
+
+            try {
+                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(feedUrl)}`);
+                const text = await res.text();
+                
+                // Parse the XML
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(text, "text/xml");
+                
+                // Handle both RSS (<item>) and Atom (<entry>) formats
+                const items = Array.from(xml.querySelectorAll('item, entry')).slice(0, 4);
+                
+                if (items.length === 0) throw new Error('No items found in feed.');
+
+                let yPos = 140;
+                const availableHeight = height - 120;
+                const ySpacing = Math.min(90, availableHeight / items.length);
+
+                items.forEach((item, index) => {
+                    // Extract data (handling differences between RSS and Atom)
+                    let itemTitle = (item.querySelector('title')?.textContent || 'Untitled').trim();
+                    let dateStr = item.querySelector('pubDate, published, updated')?.textContent;
+                    let date = dateStr ? new Date(dateStr).toLocaleDateString() : '';
+                    
+                    // Draw Bullet
+                    ctx.beginPath();
+                    ctx.arc(40, yPos - 10, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw Title
+                    const titleSize = Math.min(28, ySpacing * 0.45);
+                    canvasUtils.fitTextSingleLine(ctx, itemTitle, 60, yPos, width - 90, titleSize, 'bold');
+                    
+                    // Draw Date
+                    if (date) {
+                        ctx.fillStyle = '#555'; // Dithers nicely
+                        const subSize = Math.min(20, ySpacing * 0.35);
+                        canvasUtils.fitTextSingleLine(ctx, `Published: ${date}`, 60, yPos + (ySpacing * 0.4), width - 90, subSize, 'italic');
+                        ctx.fillStyle = 'black'; // Reset for next bullet
+                    }
+                    
+                    yPos += ySpacing;
+                });
+
+            } catch (err) {
+                canvasUtils.fitTextSingleLine(ctx, 'Error parsing RSS Feed. Is the URL correct?', 30, 150, width - 60, 30);
+                console.error(err);
+            }
+        }
+    },
+    {
+        id: 'github_profile',
+        theme: 'Tech & Dev',
+        name: 'GitHub Hacker Card',
+        description: 'Profile stats and the 52-week contribution map.',
+        minInterval: 3600, // 1 hour
+        requiredKeys: [
+            { id: 'github_username', type: 'text', label: 'GitHub Username', placeholder: 'Sarin-jacob' }
+        ],
+        render: async (ctx, width, height, apiKeys) => {
+            const username = apiKeys['github_username'] || 'Sarin-jacob';
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            try {
+                // 1. Fetch User Stats
+                const userRes = await fetch(`https://api.github.com/users/${username}`);
+                if (!userRes.ok) throw new Error('User not found');
+                const user = await userRes.json();
+
+                // 2. Fetch Contributions HTML via Proxy (GitHub returns the graph as a DOM fragment)
+                const contribUrl = `https://github.com/users/${username}/contributions`;
+                const contribRes = await fetch(`${CORS_PROXY}${encodeURIComponent(contribUrl)}`);
+                const html = await contribRes.text();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // GitHub uses data-level="0" to "4" to show commit density. 
+                // We grab all of them in order (they are returned week by week, Sun-Sat).
+                const cells = Array.from(doc.querySelectorAll('[data-level]'));
+                const levels = cells.map(c => parseInt(c.getAttribute('data-level')) || 0);
+
+                // --- Drawing the Layout ---
+
+                // Header Background
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, width, 140);
+                
+                // Name & Handle
+                ctx.fillStyle = 'white';
+                canvasUtils.fitTextSingleLine(ctx, (user.name || user.login).toUpperCase(), 40, 60, width - 80, 50, 'bold');
+                
+                ctx.fillStyle = '#ccc';
+                canvasUtils.fitTextSingleLine(ctx, `@${user.login}  |  Repos: ${user.public_repos}  |  Followers: ${user.followers}`, 40, 110, width - 80, 24, 'normal', 'monospace');
+                
+                // Bio
+                ctx.fillStyle = 'black';
+                if (user.bio) {
+                    canvasUtils.fitTextMultiLine(ctx, user.bio, 40, 170, width - 80, 80, 24, 'italic');
+                }
+
+                // --- Drawing the Contribution Graph ---
+                const boxSize = 10;
+                const gap = 4;
+                const startX = 60;
+                const startY = 320;
+                
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, 'Last 365 Days of Code', startX - 20, startY - 20, width - 80, 24, 'bold');
+                
+                // Draw Days of week labels (Mon, Wed, Fri)
+                ctx.font = '14px monospace';
+                ctx.fillText('Mon', startX - 40, startY + (boxSize+gap)*1 + 10);
+                ctx.fillText('Wed', startX - 40, startY + (boxSize+gap)*3 + 10);
+                ctx.fillText('Fri', startX - 40, startY + (boxSize+gap)*5 + 10);
+
+                // Draw the Grid
+                let col = 0;
+                let row = 0;
+                
+                for (let i = 0; i < levels.length; i++) {
+                    const level = levels[i];
+                    const x = startX + (col * (boxSize + gap));
+                    const y = startY + (row * (boxSize + gap));
+                    
+                    ctx.fillStyle = 'black';
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1;
+                    
+                    // B&W "Grass" Logic
+                    if (level === 0) {
+                        ctx.strokeRect(x, y, boxSize, boxSize); // Empty
+                    } else if (level === 1 || level === 2) {
+                        ctx.strokeRect(x, y, boxSize, boxSize); 
+                        ctx.fillRect(x + 2, y + 2, boxSize - 4, boxSize - 4); // Medium dot
+                    } else {
+                        ctx.fillRect(x, y, boxSize, boxSize); // Solid block for heavy days
+                    }
+
+                    row++;
+                    // GitHub grid is 7 days tall (Sunday to Saturday)
+                    if (row === 7) {
+                        row = 0;
+                        col++;
+                    }
+                }
+
+            } catch (err) {
+                ctx.fillStyle = 'black';
+                canvasUtils.fitTextSingleLine(ctx, `Error fetching profile or graph for @${username}`, 30, 150, width - 60, 30);
+                console.error(err);
+            }
+        }
+    },
 ];
 
 // --- Core Functions ---
