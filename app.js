@@ -673,29 +673,36 @@ const Plugins = [
             ctx.textAlign = 'left'; // Reset
 
             try {
-                // Dynamic sizing logic based on character length
-                const len = eq.formula.length;
-                let sizeMod = '\\Huge'; // Short equations (e.g., Sigmoid)
-                if (len > 110) sizeMod = '\\small'; 
-                else if (len > 80) sizeMod = '\\large'; // Very long (e.g., Binary Cross Entropy)
-                else if (len > 40) sizeMod = '\\LARGE'; // Medium-Long
-                else if (len > 25) sizeMod = '\\huge'; // Medium
+                // The Smarter Way: Waterfall Fetch
+                // Start massive, and step down only if the true pixel width is too large
+                const sizes = ['\\Huge', '\\huge', '\\LARGE', '\\large', '\\small'];
+                let bitmap = null;
+                const maxWidth = width - 80; // 40px margin on each side
+
+                for (let i = 0; i < sizes.length; i++) {
+                    const sizeMod = sizes[i];
+                    const latexUrl = `https://latex.codecogs.com/png.image?\\dpi{200}\\bg_white${sizeMod} ${encodeURIComponent(eq.formula)}`;
+                    
+                    const res = await fetch(`${CORS_PROXY}${encodeURIComponent(latexUrl)}`);
+                    const blob = await res.blob();
+                    bitmap = await createImageBitmap(blob);
+                    
+                    // If the image fits natively, or we've hit the smallest size, stop fetching!
+                    if (bitmap.width <= maxWidth || i === sizes.length - 1) {
+                        break;
+                    }
+                }
                 
-                // Keep the DPI high for clarity, but inject the dynamic size modifier
-                const latexUrl = `https://latex.codecogs.com/png.image?\\dpi{200}\\bg_white${sizeMod} ${encodeURIComponent(eq.formula)}`;
-                // Fetch it as a blob through the proxy to bypass Canvas Taint rules
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(latexUrl)}`);
-                const blob = await res.blob();
+                // Optional: Gentle canvas scale just in case \small is STILL too wide
+                const finalScale = Math.min(1, maxWidth / bitmap.width);
+                const drawW = bitmap.width * finalScale;
+                const drawH = bitmap.height * finalScale;
                 
-                // Convert blob to ImageBitmap so Canvas can draw it
-                const bitmap = await createImageBitmap(blob);
+                // Center the equation
+                const imgX = (width - drawW) / 2;
+                const imgY = (height - drawH) / 2 + 40;
                 
-                // Center the equation image on the screen
-                const imgX = (width - bitmap.width) / 2;
-                const imgY = (height - bitmap.height) / 2 + 40; // Shift down slightly below header
-                
-                // Draw it!
-                ctx.drawImage(bitmap, imgX, imgY);
+                ctx.drawImage(bitmap, imgX, imgY, drawW, drawH);
 
             } catch (err) {
                 ctx.textAlign = 'center';
