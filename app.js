@@ -338,10 +338,63 @@ const Plugins = [
         render: async (ctx, width, height, apiKeys) => {
             // A small sample, you can replace this by fetching your 500+ CSV later
             const quotes = [
+                // Naruto Uzumaki
                 { text: "Hard work is worthless for those that don't believe in themselves.", author: "Naruto Uzumaki" },
+                { text: "If you don't like your destiny, don't accept it. Instead have the courage to change it.", author: "Naruto Uzumaki" },
+                { text: "I'm not gonna run away, I never go back on my word! That's my nindo: my ninja way!", author: "Naruto Uzumaki" },
+                { text: "Failing doesn't give you a reason to give up, as long as you believe.", author: "Naruto Uzumaki" },
+                { text: "Once you question your own belief, it's over.", author: "Naruto Uzumaki" },
+                { text: "While you're alive, you need a reason for your existence. Being unable to find one is the same as being dead.", author: "Naruto Uzumaki" },
+
+                // Itachi Uchiha
+                { text: "People live their lives bound by what they accept as correct and true. That is how they define 'reality'.", author: "Itachi Uchiha" },
+                { text: "It is not the face that makes someone a monster, it's the choices they make with their lives.", author: "Itachi Uchiha" },
+                { text: "Those who forgive themselves, and are able to accept their true nature... They are the strong ones!", author: "Itachi Uchiha" },
+                { text: "Even the strongest of opponents always has a weakness.", author: "Itachi Uchiha" },
+                { text: "Knowledge and awareness are vague, and perhaps better called illusions. Everyone lives within their own subjective interpretation.", author: "Itachi Uchiha" },
+
+                // Pain / Nagato
+                { text: "Sometimes you must hurt in order to know, fall in order to grow, lose in order to gain because life's greatest lessons are learned through pain.", author: "Pain" },
+                { text: "Love is the reason why there is pain. When we lose someone precious to us, hate is born.", author: "Pain" },
+                { text: "Those who do not understand true pain can never understand true peace.", author: "Pain" },
+                { text: "Religion, ideology, resources, land, spite, love or just because... No matter how pathetic the reason, it's enough to start a war.", author: "Pain" },
+
+                // Madara Uchiha
+                { text: "Wake up to reality! Nothing ever goes as planned in this accursed world.", author: "Madara Uchiha" },
+                { text: "In this world, wherever there is light - there are also shadows.", author: "Madara Uchiha" },
+                { text: "As long as the concept of winners exists, there must also be losers.", author: "Madara Uchiha" },
+                { text: "Man seeks peace, yet at the same time yearning for war... Those are the two realms belonging solely to man.", author: "Madara Uchiha" },
+
+                // Kakashi Hatake
+                { text: "Those who break the rules are scum, but those who abandon their friends are worse than scum.", author: "Kakashi Hatake" },
+                { text: "In society, those who don't have many abilities, tend to complain more.", author: "Kakashi Hatake" },
+                { text: "The next generation will always surpass the previous one. It's one of the never-ending cycles in life.", author: "Kakashi Hatake" },
+                { text: "To know what is right and choose to ignore it is the act of a coward.", author: "Kakashi Hatake" },
+
+                // Jiraiya
                 { text: "Knowing what it feels to be in pain, is exactly why we try to be kind to others.", author: "Jiraiya" },
+                { text: "A person grows up when he's able to overcome hardships. Protection is important, but there are some things that a person must learn on his own.", author: "Jiraiya" },
+                { text: "The true measure of a shinobi is not how he lives but how he dies.", author: "Jiraiya" },
+
+                // Gaara
+                { text: "In order to escape a road of despair, one must pave a new one.", author: "Gaara" },
+                { text: "Just because someone is important to you, it doesn't necessarily mean that, that person is good.", author: "Gaara" },
+                { text: "We have walked through the darkness of this world, that's why we are able to see even a sliver of light.", author: "Gaara" },
+
+                // Rock Lee & Might Guy
+                { text: "A drop of sweat from hard work is the most beautiful jewel.", author: "Rock Lee" },
+                { text: "A genius, huh? What does that mean? 'Genius'? So I was not born with a whole lot of natural talent... but I work hard and I never give up!", author: "Rock Lee" },
+                { text: "You're right, all efforts are pointless... if you don't believe in yourself.", author: "Might Guy" },
+
+                // Others
                 { text: "When people are protecting something truly special to them, they truly can become as strong as they can be.", author: "Haku" },
-                { text: "If you don't like your destiny, don't accept it. Instead have the courage to change it.", author: "Naruto Uzumaki" }
+                { text: "It's human nature not to realize the true value of something, unless they lose it.", author: "Orochimaru" },
+                { text: "People become stronger because they have memories they can't forget.", author: "Tsunade" },
+                { text: "Fear. That is what we live with. And we live it everyday. Only in death are we free of it.", author: "Neji Hyuga" },
+                { text: "A smile is the easiest way out of a difficult situation.", author: "Sakura Haruno" },
+                { text: "Laziness is the mother of all bad habits. But ultimately she is a mother and we should respect her.", author: "Shikamaru Nara" },
+                { text: "I have long since closed my eyes... My only goal is in the darkness.", author: "Sasuke Uchiha" },
+                { text: "There's no such thing as a life without regrets.", author: "Minato Namikaze" }
             ];
             
             const q = quotes[Math.floor(Math.random() * quotes.length)];
@@ -549,12 +602,61 @@ const Plugins = [
         render: async (ctx, width, height, apiKeys) => {
             // A curated list of beautiful ML equations
             const equations = [
-                { title: "Scaled Dot-Product Attention (Transformers)", formula: "\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V" },
-                { title: "Kullback-Leibler Divergence", formula: "D_{KL}(P||Q) = \\sum_{x} P(x) \\log\\left(\\frac{P(x)}{Q(x)}\right)" },
-                { title: "Backpropagation (Chain Rule)", formula: "\\frac{\\partial E}{\\partial w_{ij}} = \\frac{\\partial E}{\\partial o_j} \\frac{\\partial o_j}{\\partial net_j} \\frac{\\partial net_j}{\\partial w_{ij}}" },
+                // Foundational Math & Statistics
                 { title: "Bayes' Theorem", formula: "P(A|B) = \\frac{P(B|A)P(A)}{P(B)}" },
+                { title: "Normal Distribution (Gaussian)", formula: "f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} \\exp\\left(-\\frac{(x-\\mu)^2}{2\\sigma^2}\\right)" },
+                { title: "Covariance Matrix", formula: "\\Sigma = \\frac{1}{n-1} \\sum_{i=1}^n (x_i - \\bar{x})(x_i - \\bar{x})^T" },
+                { title: "Cosine Similarity", formula: "\\text{sim}(A, B) = \\frac{A \\cdot B}{\\|A\\| \\|B\\|} = \\frac{\\sum A_i B_i}{\\sqrt{\\sum A_i^2}\\sqrt{\\sum B_i^2}}" },
+                { title: "Pearson Correlation", formula: "r = \\frac{\\sum (x_i - \\bar{x})(y_i - \\bar{y})}{\\sqrt{\\sum (x_i - \\bar{x})^2 \\sum (y_i - \\bar{y})^2}}" },
+                { title: "Markov Property", formula: "P(X_{n+1} = x | X_1, X_2, \\dots, X_n) = P(X_{n+1} = x | X_n)" },
+
+                // Loss Functions
                 { title: "Mean Squared Error (MSE)", formula: "\\text{MSE} = \\frac{1}{n}\\sum_{i=1}^n(Y_i - \\hat{Y}_i)^2" },
-                { title: "Sigmoid Activation", formula: "\\sigma(x) = \\frac{1}{1 + e^{-x}}" }
+                { title: "Cross-Entropy Loss", formula: "L = -\\sum_{c=1}^M y_{c} \\log(p_{c})" },
+                { title: "Binary Cross-Entropy (Log Loss)", formula: "L = -\\frac{1}{N} \\sum_{i=1}^N \\left[ y_i \\log(\\hat{y}_i) + (1 - y_i) \\log(1 - \\hat{y}_i) \\right]" },
+                { title: "Hinge Loss (SVM)", formula: "L = \\max(0, 1 - y \\cdot \\hat{y})" },
+                { title: "Kullback-Leibler Divergence", formula: "D_{KL}(P||Q) = \\sum_{x} P(x) \\log\\left(\\frac{P(x)}{Q(x)}\right)" },
+                { title: "Huber Loss", formula: "L_\\delta = \\begin{cases} \\frac{1}{2}(y - \\hat{y})^2 & \\text{for } |y - \\hat{y}| \\le \\delta \\\\ \\delta |y - \\hat{y}| - \\frac{1}{2}\\delta^2 & \\text{otherwise} \\end{cases}" },
+
+                // Activations
+                { title: "Sigmoid Activation", formula: "\\sigma(x) = \\frac{1}{1 + e^{-x}}" },
+                { title: "ReLU Activation", formula: "\\text{ReLU}(x) = \\max(0, x)" },
+                { title: "Softmax Function", formula: "\\sigma(\\mathbf{z})_i = \\frac{e^{z_i}}{\\sum_{j=1}^K e^{z_j}}" },
+                { title: "Hyperbolic Tangent (Tanh)", formula: "\\tanh(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}}" },
+                { title: "GELU Activation", formula: "\\text{GELU}(x) = x \\cdot \\Phi(x) \\approx 0.5x \\left(1 + \\tanh\\left[\\sqrt{2/\\pi} (x + 0.044715 x^3)\\right]\\right)" },
+                { title: "Swish Activation", formula: "\\text{Swish}(x) = x \\cdot \\sigma(\\beta x)" },
+
+                // Optimization & Learning
+                { title: "Gradient Descent Update", formula: "\\theta_{t+1} = \\theta_t - \\eta \\nabla_{\\theta} J(\\theta_t)" },
+                { title: "Backpropagation (Chain Rule)", formula: "\\frac{\\partial E}{\\partial w_{ij}} = \\frac{\\partial E}{\\partial o_j} \\frac{\\partial o_j}{\\partial net_j} \\frac{\\partial net_j}{\\partial w_{ij}}" },
+                { title: "SGD with Momentum", formula: "v_t = \\gamma v_{t-1} + \\eta \\nabla_{\\theta} J(\\theta); \\quad \\theta_{t+1} = \\theta_t - v_t" },
+                { title: "Adam Optimizer Update", formula: "\\theta_{t} = \\theta_{t-1} - \\frac{\\alpha \\cdot \\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon}" },
+                { title: "L2 Regularization (Ridge)", formula: "J(\\theta) = \\text{Loss}(\\theta) + \\lambda \\sum_{j=1}^p \\theta_j^2" },
+
+                // Transformers & NLP
+                { title: "Scaled Dot-Product Attention", formula: "\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V" },
+                { title: "Multi-Head Attention", formula: "\\text{MultiHead}(Q,K,V) = \\text{Concat}(\\text{head}_1, \\dots, \\text{head}_h)W^O" },
+                { title: "Positional Encoding (Sine)", formula: "PE_{(pos, 2i)} = \\sin\\left(\\frac{pos}{10000^{2i/d_{\\text{model}}}}\\right)" },
+                { title: "Positional Encoding (Cosine)", formula: "PE_{(pos, 2i+1)} = \\cos\\left(\\frac{pos}{10000^{2i/d_{\\text{model}}}}\\right)" },
+                { title: "TF-IDF", formula: "\\text{tf-idf}(t, d, D) = \\text{tf}(t, d) \\times \\log\\left(\\frac{N}{|\\{d \\in D : t \\in d\\}|}\\right)" },
+
+                // Generative AI
+                { title: "GAN Minimax Objective", formula: "\\min_G \\max_D V(D,G) = \\mathbb{E}_x[\\log D(x)] + \\mathbb{E}_z[\\log(1 - D(G(z)))]" },
+                { title: "VAE ELBO (Evidence Lower Bound)", formula: "\\text{ELBO} = \\mathbb{E}_{q_\\phi}[\\log p_\\theta(x|z)] - D_{KL}(q_\\phi(z|x) || p(z))" },
+                { title: "Diffusion Forward Process", formula: "q(x_t | x_{t-1}) = \\mathcal{N}(x_t; \\sqrt{1 - \\beta_t} x_{t-1}, \\beta_t I)" },
+                { title: "Diffusion Reverse Process", formula: "p_\\theta(x_{t-1} | x_t) = \\mathcal{N}(x_{t-1}; \\mu_\\theta(x_t, t), \\Sigma_\\theta(x_t, t))" },
+
+                // Classic Machine Learning
+                { title: "Logistic Regression", formula: "P(Y=1|X) = \\frac{1}{1 + e^{-(\\beta_0 + \\beta_1 X_1 + \\dots + \\beta_k X_k)}}" },
+                { title: "K-Means Objective", formula: "J = \\sum_{j=1}^k \\sum_{i=1}^n \\|x_i^{(j)} - c_j\\|^2" },
+                { title: "PCA Eigenvalue Problem", formula: "\\Sigma \\mathbf{v} = \\lambda \\mathbf{v}" },
+                { title: "Bellman Equation (RL)", formula: "V(s) = \\max_a \\left( R(s,a) + \\gamma \\sum_{s'} P(s'|s,a) V(s') \\right)" },
+                { title: "Q-Learning Update", formula: "Q(s,a) \\leftarrow Q(s,a) + \\alpha \\left[ r + \\gamma \\max_{a'} Q(s',a') - Q(s,a) \\right]" },
+
+                // Computer Vision / Matrices
+                { title: "2D Convolution", formula: "(I * K)(i, j) = \\sum_m \\sum_n I(i - m, j - n) K(m, n)" },
+                { title: "Intersection over Union (IoU)", formula: "\\text{IoU} = \\frac{\\text{Area of Overlap}}{\\text{Area of Union}}" },
+                { title: "Frobenius Norm", formula: "\\|A\\|_F = \\sqrt{\\sum_{i=1}^m \\sum_{j=1}^n |a_{ij}|^2}" }
             ];
             
             // Pick a random equation
@@ -705,11 +807,125 @@ const Plugins = [
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
             const terms = [
+                // Foundational Concepts
                 { term: "Overfitting", def: "When a model learns the training data too well, including the noise, resulting in poor performance on unseen data." },
                 { term: "Gradient Descent", def: "An optimization algorithm used to minimize the loss function by iteratively moving in the direction of steepest descent." },
                 { term: "Epoch", def: "One complete pass of the training dataset through the machine learning algorithm." },
                 { term: "Zero-Shot Learning", def: "A model's ability to recognize or categorize objects/concepts it has never seen during training, usually using semantic representations." },
-                { term: "Hyperparameter", def: "A parameter whose value is set before the learning process begins, like learning rate or batch size (unlike weights which are derived)." }
+                { term: "Hyperparameter", def: "A parameter whose value is set before the learning process begins, like learning rate or batch size (unlike weights which are derived)." },
+                { term: "Bias-Variance Tradeoff", def: "The balance between a model's ability to capture underlying patterns (low bias) and its sensitivity to fluctuations in the training data (low variance)." },
+                { term: "Cross-Validation", def: "A resampling procedure used to evaluate machine learning models on a limited data sample, often by splitting data into 'k' folds." },
+                { term: "Regularization", def: "Techniques (like L1 or L2) used to penalize complex models to prevent overfitting and improve generalization." },
+                { term: "Learning Rate", def: "A hyperparameter that determines the step size at each iteration while moving toward a minimum of a loss function." },
+                { term: "Loss Function", def: "A method of evaluating how well your algorithm models your dataset. If predictions deviate too much from actual results, loss function would cough up a very large number." },
+                
+                // Neural Network Basics
+                { term: "Perceptron", def: "The simplest form of a neural network, consisting of a single layer of linear threshold units." },
+                { term: "Activation Function", def: "A mathematical equation attached to each neuron in a network that determines whether it should be activated or not (e.g., ReLU, Sigmoid)." },
+                { term: "Backpropagation", def: "The primary algorithm for training neural networks, computing the gradient of the loss function with respect to each weight by the chain rule." },
+                { term: "Feedforward Network", def: "An artificial neural network wherein connections between the nodes do not form a cycle." },
+                { term: "Dropout", def: "A regularization technique where randomly selected neurons are ignored during training to prevent co-adaptation of features." },
+                { term: "Batch Normalization", def: "A technique that standardizes the inputs to a layer for each mini-batch, stabilizing the learning process and reducing the number of training epochs." },
+                { term: "Stochastic Gradient Descent (SGD)", def: "A variant of gradient descent that updates the model parameters using only a single or a few training examples at a time." },
+                { term: "Adam Optimizer", def: "An adaptive learning rate optimization algorithm that computes individual adaptive learning rates for different parameters from estimates of first and second moments of the gradients." },
+                { term: "Softmax Function", def: "A function that turns a vector of K real values into a vector of K real values that sum to 1, often used as the output activation in multi-class classification." },
+                { term: "Vanishing Gradient", def: "A difficulty in training deep neural networks where the gradient becomes incredibly small, preventing the weights from changing their value." },
+
+                // Vision & Spatial AI
+                { term: "Convolutional Neural Network (CNN)", def: "A class of deep neural networks, most commonly applied to analyzing visual imagery through grid-like topology." },
+                { term: "Pooling Layer", def: "A layer in a CNN that reduces the spatial dimensions (width and height) of the input volume, lowering computational cost." },
+                { term: "Receptive Field", def: "The defined portion of the input space that a particular CNN feature is looking at." },
+                { term: "Semantic Segmentation", def: "The process of classifying every pixel in an image to a specific class or object category." },
+                { term: "U-Net", def: "A convolutional network architecture designed for fast and precise image segmentation, highly popular in biomedical image processing." },
+                { term: "Object Detection", def: "A computer vision task that involves predicting the presence of multiple objects in an image and putting bounding boxes around them." },
+                { term: "Voxel", def: "A value on a regular grid in three-dimensional space, essentially the 3D equivalent of a pixel." },
+                { term: "Point Cloud", def: "A set of data points in space, usually produced by 3D scanners, representing the external surface of an object or scene." },
+                { term: "Marching Cubes", def: "A computer graphics algorithm that extracts a polygonal mesh of an isosurface from a three-dimensional discrete scalar field (like medical DICOM scans)." },
+                { term: "Intersection over Union (IoU)", def: "An evaluation metric used to measure the accuracy of an object detector on a particular dataset." },
+
+                // Transformers & NLP
+                { term: "Transformer", def: "A deep learning architecture that relies entirely on self-attention mechanisms to draw global dependencies between input and output." },
+                { term: "Self-Attention", def: "A mechanism relating different positions of a single sequence in order to compute a representation of the sequence." },
+                { term: "Large Language Model (LLM)", def: "A computational model notable for its ability to achieve general-purpose language generation and other NLP tasks, scaled via massive parameters." },
+                { term: "Tokenization", def: "The process of breaking down text into smaller units (tokens) such as words, subwords, or characters for processing by a model." },
+                { term: "Embeddings", def: "Dense vectors of real numbers representing text or objects in a continuous vector space, capturing semantic meaning." },
+                { term: "Fine-Tuning", def: "Taking a pre-trained model and training it further on a smaller, specific dataset to adapt it to a specialized task." },
+                { term: "Recurrent Neural Network (RNN)", def: "A class of neural networks where connections between nodes form a directed graph along a temporal sequence." },
+                { term: "Long Short-Term Memory (LSTM)", def: "An artificial RNN architecture capable of learning order dependence in sequence prediction problems." },
+                { term: "BLEU Score", def: "An algorithm for evaluating the quality of text which has been machine-translated from one natural language to another." },
+                { term: "Named Entity Recognition (NER)", def: "An information extraction task that seeks to locate and classify named entities in text into predefined categories (e.g., person, location)." },
+
+                // Generative AI
+                { term: "Generative Adversarial Network (GAN)", def: "A class of machine learning frameworks designed by Goodfellow et al. wherein two neural networks contest with each other in a game." },
+                { term: "Discriminator", def: "The network in a GAN whose goal is to distinguish between real data and the fake data generated by its adversary." },
+                { term: "Generator", def: "The network in a GAN whose goal is to create synthetic data that is indistinguishable from real data to fool the discriminator." },
+                { term: "Autoencoder", def: "A type of neural network used to learn efficient data codings in an unsupervised manner, typically for dimensionality reduction." },
+                { term: "Variational Autoencoder (VAE)", def: "A generative model that provides a probabilistic manner for describing an observation in latent space." },
+                { term: "Diffusion Model", def: "A class of generative models that learn to generate data by reversing a gradual noising process." },
+                { term: "Latent Space", def: "A compressed, multidimensional space in which a machine learning model maps complex input data to internal representations." },
+                { term: "Prompt Engineering", def: "The process of designing and optimizing input text prompts to elicit desired outputs from large language models." },
+                { term: "Hallucination", def: "A phenomenon where an AI model generates false, nonsensical, or ungrounded information presented as fact." },
+                { term: "Temperature", def: "A hyperparameter used in generative models to control the randomness of predictions; higher values lead to more diverse outputs." },
+
+                // Data & Engineering
+                { term: "Feature Engineering", def: "The process of using domain knowledge to extract features (characteristics, properties, attributes) from raw data." },
+                { term: "Dimensionality Reduction", def: "The transformation of data from a high-dimensional space into a low-dimensional space so that the low-dimensional representation retains meaningful properties." },
+                { term: "Principal Component Analysis (PCA)", def: "A statistical procedure that uses an orthogonal transformation to convert observations into a set of values of linearly uncorrelated variables." },
+                { term: "One-Hot Encoding", def: "A process of converting categorical data variables so they can be provided to machine learning algorithms to improve predictions." },
+                { term: "Data Augmentation", def: "A set of techniques used to increase the amount of data by adding slightly modified copies of already existing data or newly created synthetic data." },
+                { term: "Imputation", def: "The process of replacing missing data with substituted values." },
+                { term: "Normalization", def: "Scaling individual samples to have unit norm, or scaling features to be between 0 and 1." },
+                { term: "Standardization", def: "Transforming data to have a mean of zero and a standard deviation of one." },
+                { term: "Outlier", def: "An observation that lies an abnormal distance from other values in a random sample from a population." },
+                { term: "Ground Truth", def: "Information provided by direct observation or empirical evidence, considered to be the absolute truth for training algorithms." },
+
+                // Learning Paradigms
+                { term: "Supervised Learning", def: "A machine learning paradigm where models are trained using labeled data." },
+                { term: "Unsupervised Learning", def: "Training models on data that has no historical labels, asking the algorithm to find structures or patterns." },
+                { term: "Reinforcement Learning", def: "An area of ML concerned with how intelligent agents ought to take actions in an environment to maximize the notion of cumulative reward." },
+                { term: "Semi-Supervised Learning", def: "An approach to ML that combines a small amount of labeled data with a large amount of unlabeled data during training." },
+                { term: "Transfer Learning", def: "A research problem in ML that focuses on storing knowledge gained while solving one problem and applying it to a different but related problem." },
+                { term: "Active Learning", def: "A special case of ML in which a learning algorithm can interactively query a user to label new data points with the desired outputs." },
+                { term: "Federated Learning", def: "A machine learning technique that trains an algorithm across multiple decentralized edge devices holding local data samples, without exchanging them." },
+                { term: "Contrastive Learning", def: "A machine learning technique where a model learns to distinguish between similar and dissimilar data points." },
+                { term: "Ensemble Learning", def: "A process using multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms alone." },
+                { term: "Few-Shot Learning", def: "Feeding a learning model with a very small amount of training data, contrary to the normal practice of using a large amount." },
+
+                // Hardware, Deployment & Edge
+                { term: "Inference", def: "The process of running data through a trained machine learning model to make a prediction." },
+                { term: "Quantization", def: "The process of reducing the precision of the weights, biases, and activations in a neural network to make it faster and smaller." },
+                { term: "Model Pruning", def: "A technique to make neural networks smaller and faster by removing weights that contribute little to the model's output." },
+                { term: "Edge AI", def: "The deployment of AI applications in devices throughout the physical world (edge computing) rather than strictly in the cloud." },
+                { term: "TinyML", def: "A field of study in ML and embedded systems that explores the types of models you can run on small, low-power devices like microcontrollers." },
+                { term: "Tensor Processing Unit (TPU)", def: "An AI accelerator application-specific integrated circuit (ASIC) developed by Google specifically for neural network machine learning." },
+                { term: "ONNX", def: "Open Neural Network Exchange: An open-source ecosystem that gives AI developers the flexibility to move models between different tools and frameworks." },
+                { term: "CUDA", def: "A parallel computing platform and API created by Nvidia, heavily used for training neural networks on GPUs." },
+                { term: "Batch Size", def: "The number of training examples utilized in one iteration." },
+                { term: "Containerization", def: "Packaging software code with just the operating system libraries and dependencies required to run the code to create a single lightweight executable (e.g., Docker)." },
+
+                // Evaluation Metrics
+                { term: "Accuracy", def: "The ratio of correctly predicted observation to the total observations." },
+                { term: "Precision", def: "The ratio of correctly predicted positive observations to the total predicted positive observations." },
+                { term: "Recall (Sensitivity)", def: "The ratio of correctly predicted positive observations to the all observations in actual class." },
+                { term: "F1 Score", def: "The weighted average of Precision and Recall, useful when you have an uneven class distribution." },
+                { term: "Confusion Matrix", def: "A table that is often used to describe the performance of a classification model on a set of test data for which the true values are known." },
+                { term: "ROC Curve", def: "Receiver Operating Characteristic curve: A graphical plot that illustrates the diagnostic ability of a binary classifier system." },
+                { term: "AUC", def: "Area Under the Curve: Represents the degree or measure of separability, telling how much the model is capable of distinguishing between classes." },
+                { term: "Mean Squared Error (MSE)", def: "A measure of the average of the squares of the errors—that is, the average squared difference between the estimated values and the actual value." },
+                { term: "Mean Absolute Error (MAE)", def: "A measure of errors between paired observations expressing the same phenomenon." },
+                { term: "R-Squared", def: "A statistical measure that represents the proportion of the variance for a dependent variable that's explained by an independent variable." },
+
+                // Advanced / Math Specifics
+                { term: "Hessian Matrix", def: "A square matrix of second-order partial derivatives of a scalar-valued function, used in advanced optimization." },
+                { term: "Entropy", def: "A measure of the unpredictability of the state, or equivalently, of its average information content." },
+                { term: "Cross-Entropy Loss", def: "A metric used to measure how well a classification model in machine learning performs, calculating the difference between two probability distributions." },
+                { term: "Kullback-Leibler (KL) Divergence", def: "A measure of how one probability distribution is different from a second, reference probability distribution." },
+                { term: "Manifold Hypothesis", def: "The idea that many high-dimensional data sets that occur in the real world actually lie along low-dimensional latent manifolds." },
+                { term: "Soft Margin", def: "A modification in Support Vector Machines allowing some data points to be misclassified in order to achieve a better overall fit." },
+                { term: "Markov Decision Process (MDP)", def: "A discrete-time stochastic control process providing a mathematical framework for modeling decision making in situations where outcomes are partly random." },
+                { term: "Exploration vs. Exploitation", def: "The dilemma in reinforcement learning between choosing an action with an unknown reward (exploration) or the action with the highest known reward (exploitation)." },
+                { term: "Weight Initialization", def: "The procedure to set the initial values of a neural network's weights before training begins." },
+                { term: "Early Stopping", def: "A form of regularization used to avoid overfitting when training a learner with an iterative method, stopping when performance on validation data degrades." }
             ];
             
             const item = terms[Math.floor(Math.random() * terms.length)];
