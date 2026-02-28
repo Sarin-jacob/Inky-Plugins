@@ -2154,7 +2154,7 @@ function init() {
     lucide.createIcons();
     
     // Event Listeners
-    document.getElementById('pushNowBtn').addEventListener('click', forceUpdate);
+    document.getElementById('pushNowBtn').addEventListener('click', ()=>{lastFrameData=null; forceUpdate;});
     document.getElementById('settingsBtn').addEventListener('click', () => {
         // Load global settings
         document.getElementById('inkyUrlInput').value = config.inkyUrl;
@@ -2328,7 +2328,7 @@ function runLoop() {
     // Run the update, and ONLY start the next countdown when this one finishes
     forceUpdate().finally(() => {
         const plugin = Plugins.find(p => p.id === config.activePluginId) || Plugins[0];
-        const safeMin = plugin.minInterval || 2; 
+        const safeMin = plugin.minInterval || 5; 
         const intervalToUse = Math.max(config.interval, safeMin);
         console.log(`[Rate Limit] Next update scheduled in ${intervalToUse} seconds.`);
         renderTimer = setTimeout(runLoop, intervalToUse * 1000);
