@@ -2169,7 +2169,7 @@ function init() {
     lucide.createIcons();
     
     // Event Listeners
-    document.getElementById('pushNowBtn').addEventListener('click', ()=>{lastFrameData=null; forceUpdate;});
+    document.getElementById('pushNowBtn').addEventListener('click', ()=>{lastFrameData=null; forceUpdate();});
     document.getElementById('settingsBtn').addEventListener('click', () => {
         // Load global settings
         document.getElementById('inkyUrlInput').value = config.inkyUrl;
