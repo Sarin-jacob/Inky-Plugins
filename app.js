@@ -673,9 +673,16 @@ const Plugins = [
             ctx.textAlign = 'left'; // Reset
 
             try {
-                // We use CodeCogs to generate a massive, crisp PNG of the LaTeX
-                const latexUrl = `https://latex.codecogs.com/png.image?\\dpi{200}\\bg_white\\Huge ${encodeURIComponent(eq.formula)}`;
+                // Dynamic sizing logic based on character length
+                const len = eq.formula.length;
+                let sizeMod = '\\Huge'; // Short equations (e.g., Sigmoid)
+                if (len > 110) sizeMod = '\\small'; 
+                else if (len > 80) sizeMod = '\\large'; // Very long (e.g., Binary Cross Entropy)
+                else if (len > 40) sizeMod = '\\LARGE'; // Medium-Long
+                else if (len > 25) sizeMod = '\\huge'; // Medium
                 
+                // Keep the DPI high for clarity, but inject the dynamic size modifier
+                const latexUrl = `https://latex.codecogs.com/png.image?\\dpi{200}\\bg_white${sizeMod} ${encodeURIComponent(eq.formula)}`;
                 // Fetch it as a blob through the proxy to bypass Canvas Taint rules
                 const res = await fetch(`${CORS_PROXY}${encodeURIComponent(latexUrl)}`);
                 const blob = await res.blob();
