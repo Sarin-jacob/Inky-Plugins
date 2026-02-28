@@ -141,6 +141,7 @@ const Plugins = [
         theme: 'AI & Research', // <-- New Theme Property
         name: 'ArXiv AI Latest',
         description: 'Fetches the 3 latest cs.AI papers.',
+        doublePush: true,
         minInterval: 3600, 
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
@@ -226,6 +227,7 @@ const Plugins = [
         theme: 'Daily Utility', // <-- New Theme Property
         name: 'Current Weather',
         description: 'Needs OpenWeather API key and City Name.',
+        doublePush:true,
         minInterval: 3600,
         requiredKeys: [
             { id: 'openweather_key', type: 'password', label: 'OpenWeather API Key', required:true },
@@ -333,6 +335,7 @@ const Plugins = [
         theme: 'Fun & Aesthetic', // <-- New Theme Property
         name: 'Naruto Wisdom',
         description: 'Random quote generator using multi-line wrap.',
+        doublePush:true,
         minInterval: 60,
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
@@ -555,6 +558,7 @@ const Plugins = [
         theme: 'AI & Research',
         name: 'Hugging Face Trending',
         description: 'Top trending AI models from Hugging Face.',
+        doublePush:true,
         minInterval: 3600, // 1 Hour (Trending doesn't change every 5 mins)
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
@@ -598,6 +602,7 @@ const Plugins = [
         name: 'ML Equation of the Day',
         description: 'Displays a beautiful AI/ML equation in LaTeX.',
         minInterval: 3600, // 1 hour
+        doublePush: true,
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
             // A curated list of beautiful ML equations
@@ -818,6 +823,7 @@ const Plugins = [
         name: 'ML Glossary',
         description: 'Cycles through Machine Learning terminology.',
         minInterval: 3600, // Update once an hour
+        doublePush: true,
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
             const terms = [
@@ -1078,6 +1084,7 @@ const Plugins = [
         theme: 'News & Feeds',
         name: 'Universal RSS Reader',
         description: 'Pulls the latest posts from any RSS/Atom feed.',
+        doublePush:true,
         minInterval: 3600, // 1 hour
         requiredKeys: [
             { id: 'rss_url', type: 'text', label: 'RSS Feed URL', placeholder: 'https://bair.berkeley.edu/blog/feed.xml' },
@@ -1148,6 +1155,7 @@ const Plugins = [
         theme: 'Tech & Dev',
         name: 'GitHub Hacker Card',
         description: 'Profile stats, active repos, and the 52-week contribution map.',
+        doublePush:true,
         minInterval: 3600, // 1 hour
         requiredKeys: [
             { id: 'github_username', type: 'text', label: 'GitHub Username', placeholder: 'Sarin-jacob', required: true },
@@ -1318,6 +1326,7 @@ const Plugins = [
     {
         id: 'chess_daily',
         theme: 'Puzzles & Games',
+        doublePush:true,
         name: 'Daily Chess Puzzle',
         description: 'Draws the Chess.com daily puzzle directly to the screen.',
         minInterval: 43200, // 12 hours (Updates once a day)
@@ -1415,6 +1424,7 @@ const Plugins = [
         theme: 'Puzzles & Games',
         name: 'Daily Sudoku',
         description: 'Generates a random playable Sudoku grid.',
+        doublePush:true,
         minInterval: 3600, // 1 hour
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
@@ -1593,6 +1603,7 @@ const Plugins = [
         theme: 'Productivity',
         name: 'Markdown Scratchpad',
         description: 'Render custom notes, lists, and to-dos using simple Markdown.',
+        doublePush:true,
         minInterval: 60,
         requiredKeys: [
             { id: 'md_content', type: 'textarea', label: 'Notes Content (Markdown format)', placeholder: '# Daily Plan\n\n- Review PRs\n[ ] Fix server bug\n[x] Drink coffee' }
@@ -1833,6 +1844,7 @@ const Plugins = [
         theme: 'Knowledge & Trivia',
         name: 'On This Day in History',
         description: 'Historical events that happened on today\'s date.',
+        doublePush:true,
         minInterval: 3600, // 1 hour
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
@@ -1904,6 +1916,7 @@ const Plugins = [
         theme: 'Science & Discovery',
         name: 'Procedural Lunar Phase',
         description: 'Mathematically calculates and draws the current moon phase.',
+        doublePush:true,
         minInterval: 3600, // 1 hour
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
@@ -2016,6 +2029,7 @@ const Plugins = [
         theme: 'Knowledge & Trivia',
         name: 'Random Fun Fact',
         description: 'Displays a completely random (but true) interesting fact.',
+        doublePush:true,
         minInterval: 3600, // 1 hour
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
@@ -2056,6 +2070,7 @@ const Plugins = [
         theme: 'Knowledge & Trivia',
         name: 'Trivia Challenge',
         description: 'A random trivia question and answer from OpenTDB.',
+        doublePush:true,
         minInterval: 3600, // 1 hour
         requiredKeys: [],
         render: async (ctx, width, height, apiKeys) => {
@@ -2387,11 +2402,11 @@ async function renderActivePlugin() {
 async function pushToInky() {
     setStatus('Checking Frame...');
     const currentFrameData = canvas.toDataURL('image/png');
+    const activePlugin = Plugins.find(p => p.id === config.activePluginId);
     
-    // Check if the frame is identical to the last one we pushed
     if (currentFrameData === lastFrameData) {
         setStatus(`Skipped (No Changes) at ${new Date().toLocaleTimeString()}`);
-        return; // Abort push to save bandwidth and hardware wear
+        return;
     }
     setStatus('Pushing...');
     
@@ -2407,6 +2422,29 @@ async function pushToInky() {
             if (res.ok) {
                 lastFrameData = currentFrameData;
                 setStatus(`Success (${new Date().toLocaleTimeString()})`);
+                if (activePlugin && activePlugin.doublePush) {
+                    setStatus('Double-Push Wait...');
+                    setTimeout(async () => {
+                        setStatus('Pushing Deep Refresh...');
+                        const doubleFormData = new FormData();
+                        doubleFormData.append('retrig', 'true');
+                        try {
+                            const doubleRes = await fetch(`${config.inkyUrl}/api/push_image`, {
+                                method: 'POST',
+                                body: doubleFormData
+                            });
+                            if (doubleRes.ok) {
+                                setStatus(`Cleaned (${new Date().toLocaleTimeString()})`);
+                                console.log('double push')
+                            } else {
+                                setStatus('Double-Push Failed');
+                            }
+                        } catch (err) {
+                            setStatus('Double-Push Error');
+                            console.error('Double push connection error:', err);
+                        }
+                    }, 5000);
+                }
             } else {
                 setStatus('Push Failed');
             }
