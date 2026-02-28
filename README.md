@@ -70,7 +70,8 @@ The Web Hub comes pre-loaded with 20+ highly polished plugins tailored for devel
 
 > **Security Note:** All API keys, settings, and Personal Access Tokens (PATs) are saved locally in your browser's `localStorage`. They are never sent to any external server other than the specific API being requested.
 
-**IN_CASE_INKY_IS_UNDER_HTTP:** go to the padlock in inky hub and then sitesetting, then set Insecure content to allow
+> **Important:** Inky listens on both http and https(with self signed cerificate) so if you are using https for the hub then use https for inky url and visit `https://<inky ip>` and continue to site, else the hub cannot push to inky 
+
 ---
 
 ## 🛠️ Contributing
