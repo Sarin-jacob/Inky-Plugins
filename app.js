@@ -2309,7 +2309,7 @@ function buildApiKeyInputs() {
 
 function saveSettings() {
     config.inkyUrl = document.getElementById('inkyUrlInput').value;
-    config.inkyUrl = document.getElementById('corsUrlInput').value;
+    config.cors_proxy = document.getElementById('corsUrlInput').value;
     config.interval = parseInt(document.getElementById('intervalInput').value);
     
     const keyInputs = document.querySelectorAll('.apikey-input');
