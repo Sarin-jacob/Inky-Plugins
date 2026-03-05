@@ -1,11 +1,10 @@
-const CORS_PROXY = 'https://api.codetabs.com/v1/proxy/?quest=';
-
 // --- Core State & Configuration ---
 let config = {
     inkyUrl: localStorage.getItem('inkyUrl') || 'http://inky.local',
     interval: parseInt(localStorage.getItem('inkyInterval')) || 15,
     apiKeys: JSON.parse(localStorage.getItem('inkyApiKeys')) || {},
-    activePluginId: localStorage.getItem('inkyActivePlugin') || 'hello_world'
+    activePluginId: localStorage.getItem('inkyActivePlugin') || 'hello_world',
+    cors_proxy: localStorage.getItem('cors_proxy') || 'https://api.codetabs.com/v1/proxy/?quest='
 };
 
 let renderTimer = null;
@@ -155,7 +154,7 @@ const Plugins = [
 
             try {
                 const targetUrl = 'https://export.arxiv.org/api/query?search_query=cat:cs.AI&max_results=3&sortBy=submittedDate&sortOrder=descending';
-                const proxiedUrl = `${CORS_PROXY}${encodeURIComponent(targetUrl)}`;
+                const proxiedUrl = `${config.cors_proxy}${encodeURIComponent(targetUrl)}`;
                 
                 const res = await fetch(proxiedUrl);
                 const text = await res.text();
@@ -244,7 +243,7 @@ const Plugins = [
 
             try {
                 const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${key}&units=metric`;
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent(url)}`);
                 if (!res.ok) throw new Error('API Request Failed');
                 
                 const data = await res.json();
@@ -514,7 +513,7 @@ const Plugins = [
             try {
                 // Fetch current matches
                 const url = `https://api.cricapi.com/v1/currentMatches?apikey=${key}&offset=0`;
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent(url)}`);
                 const data = await res.json();
 
                 if (!data.data || data.data.length === 0) {
@@ -571,7 +570,7 @@ const Plugins = [
 
             try {
                 // Hugging Face has a free, public API for this
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent('https://huggingface.co/models-json?sort=trending&withCount=true')}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent('https://huggingface.co/models-json?sort=trending&withCount=true')}`);
                 const data = await res.json();
                 const models=data["models"].slice(0,4);
                 console.log(models);
@@ -688,7 +687,7 @@ const Plugins = [
                     const sizeMod = sizes[i];
                     const latexUrl = `https://latex.codecogs.com/png.image?\\dpi{200}\\bg_white${sizeMod} ${encodeURIComponent(eq.formula)}`;
                     
-                    const res = await fetch(`${CORS_PROXY}${encodeURIComponent(latexUrl)}`);
+                    const res = await fetch(`${config.cors_proxy}${encodeURIComponent(latexUrl)}`);
                     const blob = await res.blob();
                     bitmap = await createImageBitmap(blob);
                     
@@ -988,7 +987,7 @@ const Plugins = [
             try {
                 // Todoist API wrapped in our proxy
                 const url = 'https://api.todoist.com/api/v1/tasks?filter=today|overdue';
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`, {
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent(url)}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -1044,7 +1043,7 @@ const Plugins = [
             
             try {
                 const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`;
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent(url)}`);
                 const data = await res.json();
                 
                 if (!data[coinId]) throw new Error('Coin not found');
@@ -1102,7 +1101,7 @@ const Plugins = [
             ctx.fillRect(30, 80, width - 60, 4);
 
             try {
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(feedUrl)}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent(feedUrl)}`);
                 const text = await res.text();
                 
                 // Parse the XML
@@ -1239,7 +1238,7 @@ const Plugins = [
                 } else {
                     // Fallback to HTML scraper for public-only commits
                     const contribUrl = `https://github.com/users/${username}/contributions`;
-                    const contribRes = await fetch(`${CORS_PROXY}${encodeURIComponent(contribUrl)}`);
+                    const contribRes = await fetch(`${config.cors_proxy}${encodeURIComponent(contribUrl)}`);
                     const html = await contribRes.text();
                     
                     const parser = new DOMParser();
@@ -1433,7 +1432,7 @@ const Plugins = [
             
             try {
                 // Free Sudoku API
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent('https://sudoku-api.vercel.app/api/dosuku')}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent('https://sudoku-api.vercel.app/api/dosuku')}`);
                 const data = await res.json();
                 
                 const grid = data.newboard.grids[0].value;
@@ -1863,7 +1862,7 @@ const Plugins = [
             try {
                 // Free Wikipedia REST API
                 const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`;
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent(url)}`);
                 const data = await res.json();
 
                 if (!data.events || data.events.length === 0) throw new Error('No events found.');
@@ -2039,7 +2038,7 @@ const Plugins = [
             try {
                 // Free, no-auth API for random facts
                 const url = 'https://uselessfacts.jsph.pl/api/v2/facts/random';
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent(url)}`);
                 const data = await res.json();
                 const fact = data.text;
 
@@ -2080,7 +2079,7 @@ const Plugins = [
             try {
                 // Free Trivia API (1 random question)
                 const url = 'https://opentdb.com/api.php?amount=1';
-                const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const res = await fetch(`${config.cors_proxy}${encodeURIComponent(url)}`);
                 const data = await res.json();
                 const item = data.results[0];
 
@@ -2173,6 +2172,7 @@ function init() {
     document.getElementById('settingsBtn').addEventListener('click', () => {
         // Load global settings
         document.getElementById('inkyUrlInput').value = config.inkyUrl;
+        document.getElementById('corsUrlInput').value = config.cors_proxy;
         document.getElementById('intervalInput').value = config.interval;
         // Find active plugin to update the modal title/subtitle
         const activePlugin = Plugins.find(p => p.id === config.activePluginId);
@@ -2309,6 +2309,7 @@ function buildApiKeyInputs() {
 
 function saveSettings() {
     config.inkyUrl = document.getElementById('inkyUrlInput').value;
+    config.inkyUrl = document.getElementById('corsUrlInput').value;
     config.interval = parseInt(document.getElementById('intervalInput').value);
     
     const keyInputs = document.querySelectorAll('.apikey-input');
@@ -2320,6 +2321,7 @@ function saveSettings() {
     });
 
     localStorage.setItem('inkyUrl', config.inkyUrl);
+    localStorage.setItem('cors-proxy', config.cors_proxy);
     localStorage.setItem('inkyInterval', config.interval);
     localStorage.setItem('inkyApiKeys', JSON.stringify(config.apiKeys));
     
